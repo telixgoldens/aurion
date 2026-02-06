@@ -1,0 +1,118 @@
+/* LandingPage.css */
+:root {
+  --deep-navy: #0a0e17;
+  --gold-beige: #d4af37; /* Or #e5d3b3 for a softer beige */
+  --soft-white: #f8f9fa;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+body {
+  background-color: var(--deep-navy);
+  color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
+}
+
+.navbar {
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.text-gold {
+  color: var(--gold-beige);
+}
+
+.hero-section {
+  padding: 100px 0;
+  background: radial-gradient(circle at top right, rgba(212, 175, 55, 0.05), transparent);
+}
+
+.btn-gold {
+  background-color: var(--gold-beige);
+  color: var(--deep-navy);
+  font-weight: 600;
+  border-radius: 50px;
+  padding: 12px 30px;
+  transition: transform 0.2s;
+}
+
+.btn-gold:hover {
+  transform: translateY(-2px);
+  background-color: #f1c40f;
+}
+
+.credit-card-ui {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.stat-pill {
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--gold-beige);
+  border-radius: 100px;
+  padding: 5px 15px;
+  font-size: 0.8rem;
+  display: inline-block;
+}
+
+/* Additional Styles */
+.bg-navy-light {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.custom-table {
+  background: transparent !important;
+  --bs-table-bg: transparent;
+}
+
+.custom-table th, .custom-table td {
+  padding: 1.2rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar.bg-gold {
+  background-color: var(--gold-beige) !important;
+}
+
+.router-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--gold-beige);
+  color: var(--deep-navy);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* Aurion Branding Enhancements */
+.border-gold {
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+}
+
+.text-gold {
+  color: #d4af37; /* Metallic Gold */
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.tracking-widest {
+  letter-spacing: 0.2em;
+}
+
+.bg-navy-light {
+  background: rgba(10, 14, 23, 0.8);
+}
+
+/* Eye-catching pulse for the Guarantee Button */
+.btn-gold {
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-gold:hover {
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5);
+  transform: translateY(-3px);
+}

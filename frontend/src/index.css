@@ -1,0 +1,110 @@
+/* Color Palette 
+   Deep Navy: #0A1128
+   Gold: #D4AF37 (Metallic) or #C5A059 (Soft)
+   Beige: #F5F5DC
+*/
+
+:root {
+    --bg-navy: #0A1128;
+    --accent-gold: #C5A059;
+    --text-white: #FFFFFF;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(197, 160, 89, 0.2);
+}
+
+body {
+    background-color: var(--bg-navy);
+    color: var(--text-white);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+}
+
+/* Gradient Background like Credly */
+.hero-glow {
+    position: absolute;
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 600px;
+    background: radial-gradient(circle, rgba(197, 160, 89, 0.08) 0%, rgba(10, 17, 40, 0) 70%);
+    z-index: -1;
+}
+
+/* Navbar from Stakt */
+.navbar {
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+}
+
+.nav-link { color: var(--text-white) !important; opacity: 0.8; }
+.nav-link:hover { color: var(--accent-gold) !important; }
+
+/* Hero Section */
+.hero-title {
+    font-size: 4rem;
+    font-weight: 700;
+    letter-spacing: -2px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #C5A059 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Glass Cards from Sample 2 */
+.credit-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(15px);
+    border-radius: 24px;
+    padding: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.credit-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--accent-gold);
+}
+
+.btn-gold {
+    background-color: var(--accent-gold);
+    color: var(--bg-navy);
+    font-weight: 600;
+    border-radius: 50px;
+    padding: 12px 30px;
+    border: none;
+}
+
+.btn-gold:hover {
+    background-color: #E6BE66;
+    box-shadow: 0 0 20px rgba(197, 160, 89, 0.4);
+}
+/* Adding to existing styles */
+.text-gold { color: var(--accent-gold); }
+
+/* Animated Border for the Dashboard Section */
+.dashboard-preview {
+    background: linear-gradient(var(--bg-navy), var(--bg-navy)) padding-box,
+                linear-gradient(to right, transparent, var(--accent-gold), transparent) border-box;
+    border: 1px solid transparent;
+    border-radius: 30px;
+    padding: 40px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent-gold);
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Custom Scrollbar for a premium feel */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-navy); }
+::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 10px; }

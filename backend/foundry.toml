@@ -1,0 +1,12 @@
+[profile.default]
+src = "contracts"
+test = "test"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.20"
+
+[fuzz]
+runs = 256
+
+[rpc_endpoints]
+arbitrum = "${ARBITRUM_RPC_URL}"
