@@ -1,35 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { Sidebar } from "./components/layout/Sidebar";
+import { TopBar } from "./components/layout/TopBar";
+import { Dashboard } from "./components/pages/Dashboard";
+import { Borrow } from "./components/pages/Borrow";
+import { ProvideCredit } from "./components/pages/ProvideCredit";
+import { Pools } from "./components/pages/Pools";
+import { Insurance } from "./components/pages/Insurance";
+import { Governance } from "./components/pages/Governance";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState("dashboard");
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "dashboard":
+        return <Dashboard />;
+      case "borrow":
+        return <Borrow />;
+      case "provide":
+        return <ProvideCredit />;
+      case "pools":
+        return <Pools />;
+      case "insurance":
+        return <Insurance />;
+      case "governance":
+        return <Governance />;
+      default:
+        return <Dashboard />;
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="flex h-screen bg-[#0B1437] overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Bar */}
+        <TopBar />
+        
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-8">
+          {renderPage()}
+        </main>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
-
-export default App
+export default App;

@@ -11,7 +11,7 @@ contract CreditInvariants is BaseTest {
             creditManager.delegatedCredit(alice);
 
         assertLe(
-            creditManager.totalDebtValue(alice),
+            creditManager.totalDebt(alice),
             credit
         );
     }

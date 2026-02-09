@@ -2,23 +2,23 @@
 pragma solidity ^0.8.20;
 
 contract MockAavePool {
-    mapping(address => uint256) public debt;
+    mapping(address => uint256) public debtOf;
 
     function borrow(
         address asset,
         uint256 amount,
         uint256,
         uint16,
-        address onBehalfOf
+        address user
     ) external {
-        debt[onBehalfOf] += amount;
+        debtOf[user] += amount;
     }
 
     function repay(
         address asset,
         uint256 amount,
-        address onBehalfOf
+        address user
     ) external {
-        debt[onBehalfOf] -= amount;
+        debtOf[user] -= amount;
     }
 }

@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 
-import {CreditManager} from "../src/core/CreditManager.sol";
-import {CreditRouter} from "../src/core/CreditRouter.sol";
-import {CreditPool} from "../src/pools/CreditPool.sol";
+import {CreditManager} from "../contracts/core/CreditManager.sol";
+import {CreditRouter} from "../contracts/core/CreditRouter.sol";
+import {CreditPool} from "../contracts/pools/CreditPool.sol";
 
 import {MockAavePool} from "./mocks/MockAavePool.sol";
 import {MockCompound} from "./mocks/MockCompound.sol";
@@ -27,23 +27,36 @@ abstract contract BaseTest is Test {
     MockERC20 internal usdc;
 
     function setUp() public virtual {
-        usdc = new MockERC20("USDC", "USDC", 6);
-        oracle = new MockOracle();
-        aave = new MockAavePool();
-        compound = new MockCompound();
+    usdc = new MockERC20("USDC", "USDC", 6);
+    oracle = new MockOracle();
+    aave = new MockAavePool();
+    compound = new MockCompound();
 
-        creditManager = new CreditManager(address(oracle));
-        creditPool = new CreditPool(address(usdc), address(creditManager));
+    // 1️⃣ deploy router WITHOUT manager
+    router = new CreditRouter(
+        address(0),
+        address(oracle)
+    );
 
-        router = new CreditRouter(
-            address(creditManager),
-            address(aave),
-            address(compound)
-        );
+    // 2️⃣ deploy manager
+    creditManager = new CreditManager(
+        address(router),
+        address(oracle)
+    );
 
-        oracle.setPrice(address(usdc), 1e6);
+    // 3️⃣ wire manager into router
+    router.setCreditManager(address(creditManager));
 
-        usdc.mint(alice, 1_000_000e6);
-        usdc.mint(bob,   1_000_000e6);
-    }
+    // 4️⃣ deploy pool (needs manager)
+    creditPool = new CreditPool(
+        address(usdc),
+        address(creditManager)
+    );
+
+    oracle.setPrice(address(usdc), 1e6);
+
+    usdc.mint(alice, 1_000_000e6);
+    usdc.mint(bob,   1_000_000e6);
+}
+
 }

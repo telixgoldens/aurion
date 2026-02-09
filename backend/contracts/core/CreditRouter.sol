@@ -8,7 +8,7 @@ import { AaveAdapter } from "../adapters/AaveAdapter.sol";
 import { CompoundAdapter } from "../adapters/CompoundAdapter.sol";
 
 contract CreditRouter {
-    ICreditManager public immutable creditManager;
+    ICreditManager public creditManager;
     CreditOracle public immutable oracle;
 
     constructor(address _manager, address _oracle) {
@@ -42,4 +42,10 @@ contract CreditRouter {
         creditManager.onBorrow(msg.sender, amount);
         CompoundAdapter(adapter).borrow(amount);
     }
+
+     function setCreditManager(address _cm) external {
+     require(address(creditManager) == address(0), "Already set");
+      creditManager = ICreditManager(_cm);
+    }
+
 }

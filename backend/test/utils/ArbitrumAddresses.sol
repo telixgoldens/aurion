@@ -10,5 +10,5 @@ library ArbitrumAddresses {
 
     // Example cToken
     address constant CUSDC =
-        0x9E8f8dD8c1e5e6b94cE7c5A5A7eD4dC3c2c8B6cF;
+        0x9e8F8dd8C1E5e6B94CE7C5a5A7ED4dc3C2C8B6Cf;
 }

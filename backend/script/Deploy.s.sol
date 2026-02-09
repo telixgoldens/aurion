@@ -26,9 +26,10 @@ contract Deploy is Script {
 
         InsuranceFund insurance = new InsuranceFund(address(0));
         FeeController fees = new FeeController(
-            msg.sender,
-            address(insurance)
-        );
+    msg.sender,
+    payable(address(insurance))
+);
+
 
         vm.stopBroadcast();
     }

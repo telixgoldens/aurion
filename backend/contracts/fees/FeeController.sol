@@ -12,10 +12,11 @@ contract FeeController {
     uint256 public constant TREASURY_SHARE = 20;
     uint256 public constant INSURANCE_SHARE = 10;
 
-    constructor(address _treasury, address _insurance) {
-        treasury = _treasury;
-        insurance = InsuranceFund(_insurance);
-    }
+   constructor(address _treasury, address payable _insurance) {
+    treasury = _treasury;
+    insurance = InsuranceFund(_insurance);
+}
+
 
     receive() external payable {}
 

@@ -10,3 +10,4 @@ runs = 256
 
 [rpc_endpoints]
 arbitrum = "${ARBITRUM_RPC_URL}"
+

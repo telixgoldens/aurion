@@ -60,4 +60,12 @@ contract CreditManager is ICreditManager {
     function freeze(address user) external onlyRouter {
         frozen[user] = true;
     }
+    function collateralValue(address user) external view returns (uint256) {
+    return _collateralValue[user];
+}
+function delegatedCredit(address user) external view returns (uint256) {
+    return _delegatedCredit[user];
+}
+
+
 }

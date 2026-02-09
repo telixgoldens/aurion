@@ -2,28 +2,52 @@
 pragma solidity ^0.8.20;
 
 import { Errors } from "../libraries/Errors.sol";
+import { ICreditManager } from "../interfaces/ICreditManager.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract CreditPool {
-    address public manager;
-    uint256 public totalDeposits;
-    uint256 public totalDelegated;
+    IERC20 public immutable usdc;
+    ICreditManager public immutable creditManager;
 
-    mapping(address => uint256) public balances;
+    uint256 private _totalDeposits;
+    uint256 private _totalDelegated;
 
-    constructor(address _manager) {
-        manager = _manager;
+    constructor(address _usdc, address _creditManager) {
+        usdc = IERC20(_usdc);
+        creditManager = ICreditManager(_creditManager);
     }
 
-    function deposit() external payable {
-        balances[msg.sender] += msg.value;
-        totalDeposits += msg.value;
+    /*//////////////////////////////////////////////////////////////
+                                VIEWS
+    //////////////////////////////////////////////////////////////*/
+
+    function totalDeposits() external view returns (uint256) {
+        return _totalDeposits;
     }
 
-    function delegate(address user, uint256 amount) external {
-        if (msg.sender != manager) revert Errors.NotAuthorized();
-        if (totalDelegated + amount > totalDeposits) {
+    function totalDelegated() external view returns (uint256) {
+        return _totalDelegated;
+    }
+
+    function availableLiquidity() public view returns (uint256) {
+        return _totalDeposits - _totalDelegated;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                ACTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function deposit(uint256 amount) external {
+        usdc.transferFrom(msg.sender, address(this), amount);
+        _totalDeposits += amount;
+    }
+
+    function delegateCredit(address user, uint256 amount) external {
+        if (amount > availableLiquidity()) {
             revert Errors.InsufficientCredit();
         }
-        totalDelegated += amount;
+
+        _totalDelegated += amount;
+        creditManager.setDelegatedCredit(user, amount);
     }
 }
