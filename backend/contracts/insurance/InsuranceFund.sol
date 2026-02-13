@@ -11,10 +11,15 @@ contract InsuranceFund {
         controller = _controller;
     }
 
-    modifier onlyController() {
-        if (msg.sender != controller) revert Errors.NotAuthorized();
-        _;
-    }
+   modifier onlyController() {
+    _onlyController();
+    _;
+}
+
+function _onlyController() internal view{
+    if (msg.sender != controller) revert Errors.NotAuthorized();
+}
+
 
     receive() external payable {
         totalBalance += msg.value;

@@ -1,4 +1,3 @@
-// TechnicalArchitecture.jsx
 import React from 'react';
 
 const TechnicalArchitecture = () => {
@@ -9,9 +8,7 @@ const TechnicalArchitecture = () => {
           <h2 className="display-6 fw-bold">The <span className="text-gold">Aurion</span> Stack</h2>
           <p className="opacity-50">Abstracting complexity through modular credit infrastructure</p>
         </div>
-
         <div className="row g-4">
-          {/* Layer 1: Access */}
           <div className="col-md-4">
             <div className="p-4 bg-navy-light border border-secondary rounded-4 h-100">
               <div className="text-gold mb-3 fs-3">01</div>
@@ -22,8 +19,6 @@ const TechnicalArchitecture = () => {
               </p>
             </div>
           </div>
-
-          {/* Layer 2: Routing */}
           <div className="col-md-4">
             <div className="p-4 border-gold bg-navy-light rounded-4 h-100 shadow-sm">
               <div className="text-gold mb-3 fs-3">02</div>
@@ -34,8 +29,6 @@ const TechnicalArchitecture = () => {
               </p>
             </div>
           </div>
-
-          {/* Layer 3: Execution */}
           <div className="col-md-4">
             <div className="p-4 bg-navy-light border border-secondary rounded-4 h-100">
               <div className="text-gold mb-3 fs-3">03</div>

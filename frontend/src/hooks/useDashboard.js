@@ -1,29 +1,45 @@
-import { useAccount, usePublicClient } from "wagmi";
-import CreditManager from "../abi/CreditManager.json";
+import { useState, useEffect, useCallback } from "react";
+import { useAccount } from "wagmi";
 import { ethers } from "ethers";
+import { getCreditManager } from "../lib/contracts";
+import { fromUnits } from "../utils/format";
 
 export function useDashboard() {
-  const { address } = useAccount();
-  const client = usePublicClient();
+  const { address, isConnected } = useAccount();
+  const [data, setData] = useState({
+    debt: 0,
+    limit: 0,
+    available: 0,
+    healthFactor: 0
+  });
 
-  const fetchData = async () => {
-    if (!address || !client) return null;
+  const fetchData = useCallback(async () => {
+    if (!isConnected || !address || !window.ethereum) return;
 
-    const manager = new ethers.Contract(
-      import.meta.env.VITE_CREDIT_MANAGER,
-      CreditManager.abi,
-      new ethers.BrowserProvider(client.transport)
-    );
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const manager = getCreditManager(provider);
+      const [debt, limit, health] = await Promise.all([
+        manager.totalDebt(address),
+        manager.creditLimit(address),
+        manager.healthFactor(address) 
+      ]);
+      const available = limit - debt;
 
-    const debt = await manager.totalDebt(address);
-    const limit = await manager.creditLimit(address);
+      setData({
+        debt: fromUnits(debt, 6), 
+        limit: fromUnits(limit, 6),
+        available: fromUnits(available, 6),
+        healthFactor: fromUnits(health, 18)
+      });
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    }
+  }, [address, isConnected]);
 
-    return {
-      debt: Number(debt) / 1e6,
-      limit: Number(limit) / 1e6,
-      available: Number(limit - debt) / 1e6,
-    };
-  };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  return { fetchData };
+  return { data, refetch: fetchData };
 }

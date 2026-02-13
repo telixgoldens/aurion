@@ -8,7 +8,6 @@ library ArbitrumAddresses {
     address constant USDC =
         0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
 
-    // Example cToken
     address constant CUSDC =
         0x9e8F8dd8C1E5e6B94CE7C5a5A7ED4dc3C2C8B6Cf;
 }

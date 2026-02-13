@@ -1,28 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../BaseTest.sol";
+import {BaseTest} from "../BaseTest.sol";
 
 contract AaveIntegrationTest is BaseTest {
-
     function test_borrow_through_router() public {
+        vm.prank(address(router));
         creditManager.setCollateralValue(alice, 1000e6);
 
-        vm.prank(alice);
-        router.borrowFromAave(
-            address(aave),   // adapter
-            address(usdc),   // asset
-            300e6            // amount
-        );
+       vm.prank(alice);
+       router.borrowFromAave(address(aaveAdapter), address(usdc), 300e6);
 
-        assertEq(
-            creditManager.totalDebt(alice),
-            300e6
-        );
-
-        assertEq(
-            aave.debtOf(alice),
-            300e6
-        );
+        assertEq(creditManager.totalDebt(alice), 300e6);
+        assertEq(aave.debtOf(alice), 300e6);
     }
 }

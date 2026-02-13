@@ -9,4 +9,8 @@ library Errors {
     error OracleUnhealthy();
     error PoolNotFound();
     error AdapterFailure();
+    error NotLiquidatable();
+    error InvalidLiquidationBonus();
+    error RepayExceedsDebt();
+    error InvalidAsset();
 }

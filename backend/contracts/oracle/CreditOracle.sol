@@ -9,10 +9,15 @@ contract CreditOracle {
         owner = msg.sender;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "ONLY_OWNER");
-        _;
-    }
+   modifier onlyOwner() {
+    _onlyOwner();
+    _;
+}
+
+function _onlyOwner() internal view{
+    require(msg.sender == owner, "ONLY_OWNER");
+}
+
 
     function setHealthy(bool _healthy) external onlyOwner {
         healthy = _healthy;

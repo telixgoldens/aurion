@@ -13,9 +13,14 @@ contract RiskCouncil {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "ONLY_COUNCIL");
-        _;
-    }
+    _onlyOwner();
+    _;
+}
+
+function _onlyOwner() internal view{
+    require(msg.sender == owner, "ONLY_COUNCIL");
+}
+
 
     function freezeAccount(address user) external onlyOwner {
         manager.freeze(user);

@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./ForkBase.t.sol";
-import "../utils/ArbitrumAddresses.sol";
-
+import {ForkBase} from "./ForkBase.t.sol";
+import {ArbitrumAddresses} from "../utils/ArbitrumAddresses.sol";
 import { CreditManager } from "../../contracts/core/CreditManager.sol";
 import { CreditRouter } from "../../contracts/core/CreditRouter.sol";
 import { CreditOracle } from "../../contracts/oracle/CreditOracle.sol";
 import { AaveAdapter } from "../../contracts/adapters/AaveAdapter.sol";
+import { LiquidationController } from "../../contracts/fees/LiquidationController.sol";
+
 
 contract AaveBorrowForkTest is ForkBase {
     CreditManager manager;
     CreditRouter router;
     CreditOracle oracle;
     AaveAdapter adapter;
+    LiquidationController internal liquidationController;
 
     address user = address(0xABCD);
 
@@ -22,16 +24,15 @@ contract AaveBorrowForkTest is ForkBase {
 
         oracle = new CreditOracle();
         adapter = new AaveAdapter(ArbitrumAddresses.AAVE_POOL);
-
-        router = new CreditRouter(address(0), address(oracle));
+        liquidationController = new LiquidationController(108e16); 
+        router = new CreditRouter(address(0), address(oracle), address(liquidationController), address(0));
         manager = new CreditManager(address(router), address(oracle));
 
         vm.prank(address(this));
-        router = new CreditRouter(address(manager), address(oracle));
+        router.setCreditManager(address(manager));
 
         vm.deal(user, 10 ether);
 
-        // Simulate collateral + delegated credit
         vm.prank(address(router));
         manager.setCollateralValue(user, 50_000e6);
 

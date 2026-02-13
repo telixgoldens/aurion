@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import { CreditManager } from "../../contracts/core/CreditManager.sol";
+import {StdInvariant} from "forge-std/StdInvariant.sol";
+import {BaseTest} from "../BaseTest.sol";
 
-contract ForkInvariant is Test {
-    CreditManager manager;
-    address user = address(0xCAFE);
+contract ForkInvariant is StdInvariant, BaseTest {
+    function setUp() public override {
+        super.setUp();
+        targetContract(address(router));
+    }
 
-    function invariant_debt_leq_credit() public {
-        uint256 debt = manager.totalDebt(user);
-        uint256 limit = manager.creditLimit(user);
-        assertLe(debt, limit);
+    function invariant_debt_leq_credit() public view {
+        uint256 credit =
+            creditManager.collateralValue(alice) +
+            creditManager.delegatedCredit(alice);
+
+        assertLe(creditManager.totalDebt(alice), credit);
     }
 }

@@ -1,126 +1,256 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
+import { ethers } from "ethers";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { TrendingUp, Droplet, Shield, Info } from "lucide-react";
+import { TrendingUp, Droplet, Shield, Info, Loader2, Wallet } from "lucide-react";
+
+import CreditPool from "../../abi/CreditPool.json"; // adjust if path differs
+import { getBrowserProvider, getSigner } from "../../lib/eth";
+import { getCreditManager, getUSDC, addresses } from "../../lib/contracts";
 
 export function ProvideCredit() {
+  const { address, isConnected } = useAccount();
+
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [usdcBal, setUsdcBal] = useState(0);
+  const [poolStats, setPoolStats] = useState({
+    poolAddress: "",
+    totalDeposits: 0,
+    availableLiquidity: 0,
+    totalDelegated: 0,
+    utilization: 0, // 0..1
+  });
+
+  // live reads
+  useEffect(() => {
+    (async () => {
+      if (!isConnected || !address || !window.ethereum) return;
+
+      const provider = await getBrowserProvider();
+
+      // USDC balance
+      const usdc = getUSDC(provider);
+      const bal = await usdc.balanceOf(address);
+      setUsdcBal(Number(ethers.formatUnits(bal ?? 0n, 6)));
+
+      // Pool stats
+      const manager = getCreditManager(provider);
+      const poolAddress = await manager.pool();
+      const pool = new ethers.Contract(poolAddress, CreditPool.abi, provider);
+
+      const [td, al, tdel] = await Promise.all([
+        pool.totalDeposits(),
+        pool.availableLiquidity(),
+        pool.totalDelegated(),
+      ]);
+
+      const totalDeposits = Number(ethers.formatUnits(td ?? 0n, 6));
+      const availableLiquidity = Number(ethers.formatUnits(al ?? 0n, 6));
+      const totalDelegated = Number(ethers.formatUnits(tdel ?? 0n, 6));
+
+      const utilized = Math.max(0, totalDeposits - availableLiquidity);
+      const utilization = totalDeposits > 0 ? utilized / totalDeposits : 0;
+
+      setPoolStats({
+        poolAddress,
+        totalDeposits,
+        availableLiquidity,
+        totalDelegated,
+        utilization,
+      });
+    })();
+  }, [isConnected, address]);
 
   const depositAmount = parseFloat(amount) || 0;
-  const expectedYield = depositAmount * 0.0875;
+
+  // your curve, but utilization is live now
+  const baseRate = 0.04;
+  const utilizationMultiplier = 0.10;
+  const currentAPR = (baseRate + utilizationMultiplier * poolStats.utilization) * 100;
+
+  const expectedYield = depositAmount * (currentAPR / 100);
+
+  const handleDeposit = async () => {
+    if (!isConnected || !address) return;
+    if (!amount || Number(amount) <= 0) return;
+
+    setLoading(true);
+    try {
+      const signer = await getSigner();
+
+      const poolAddress = poolStats.poolAddress;
+      if (!poolAddress) throw new Error("Pool address not available");
+
+      const amountWei = ethers.parseUnits(amount.toString(), 6);
+
+      // approve USDC -> pool
+      const usdc = getUSDC(signer);
+      const approveTx = await usdc.approve(poolAddress, amountWei);
+      await approveTx.wait();
+
+      // deposit
+      const pool = new ethers.Contract(poolAddress, CreditPool.abi, signer);
+      const tx = await pool.deposit(amountWei);
+      await tx.wait();
+
+      // refresh balance + stats quickly
+      const provider = await getBrowserProvider();
+      const usdcRead = getUSDC(provider);
+      const bal = await usdcRead.balanceOf(address);
+      setUsdcBal(Number(ethers.formatUnits(bal ?? 0n, 6)));
+
+      alert(`Successfully deposited ${amount} USDC into the Credit Pool.`);
+      setAmount("");
+    } catch (e) {
+      console.error(e);
+      alert(e?.shortMessage || e?.message || "Deposit failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalLiquidityUsd = poolStats.totalDeposits; // USDC ~ USD
+  const utilizationPct = poolStats.utilization * 100;
 
   return (
     <div className="max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl text-white mb-2">Provide Credit</h1>
-        <p className="text-sm text-[#F5DEB3]/70">Earn yield by providing liquidity to the protocol</p>
+        <h1 className="text-2xl text-white mb-2">Provide Delegated Credit</h1>
+        <p className="text-sm text-[#d4af37]/70">Deposit into the protocol pool and earn yield.</p>
       </div>
 
-      {/* Pool Overview */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Droplet className="w-4 h-4 text-[#D4AF37]" />
-            <h3 className="text-sm text-[#F5DEB3]/70">Total Liquidity</h3>
+      {/* Pool Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-[#0a0e17] border-[#d4af37]/20 p-5 shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#d4af37]/5 rounded-bl-full transition-all group-hover:bg-[#d4af37]/10"></div>
+          <div className="flex items-center gap-2 mb-3 relative z-10">
+            <Droplet className="w-4 h-4 text-[#d4af37]" />
+            <h3 className="text-xs font-bold text-[#d4af37] uppercase tracking-widest">Total Liquidity</h3>
           </div>
-          <div className="text-2xl text-white">$12,450,000</div>
+          <div className="text-2xl text-white font-mono">
+            ${totalLiquidityUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          </div>
         </Card>
 
-        <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
-          <div className="flex items-center gap-2 mb-3">
+        <Card className="bg-[#0a0e17] border-[#d4af37]/20 p-5 shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#d4af37]/5 rounded-bl-full transition-all group-hover:bg-[#d4af37]/10"></div>
+          <div className="flex items-center gap-2 mb-3 relative z-10">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm text-[#F5DEB3]/70">Utilization Rate</h3>
+            <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Utilization</h3>
           </div>
-          <div className="text-2xl text-white">68.5%</div>
+          <div className="text-2xl text-white font-mono">{utilizationPct.toFixed(2)}%</div>
         </Card>
 
-        <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
-            <h3 className="text-sm text-[#F5DEB3]/70">Current APR</h3>
+        <Card className="bg-[#0a0e17] border-[#d4af37]/20 p-5 shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#d4af37]/5 rounded-bl-full transition-all group-hover:bg-[#d4af37]/10"></div>
+          <div className="flex items-center gap-2 mb-3 relative z-10">
+            <TrendingUp className="w-4 h-4 text-[#d4af37]" />
+            <h3 className="text-xs font-bold text-[#d4af37] uppercase tracking-widest">Current APR</h3>
           </div>
-          <div className="text-2xl text-white">8.75%</div>
+          <div className="text-2xl text-white font-mono">{currentAPR.toFixed(2)}%</div>
         </Card>
       </div>
 
-      {/* Deposit Card */}
-      <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6">
-        <h2 className="text-lg text-white mb-6">Deposit USDC</h2>
-
-        <div className="space-y-4">
-          {/* Amount Input */}
-          <div>
-            <label className="text-sm text-[#F5DEB3]/70 mb-2 block">Deposit Amount</label>
-            <div className="relative">
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="bg-[#0B1437] border-[#D4AF37]/30 text-white text-2xl pr-20 h-14"
-              />
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setAmount("10000")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#D4AF37] hover:text-[#C19A2E] hover:bg-[#D4AF37]/10"
-              >
-                MAX
-              </Button>
-            </div>
-            <p className="text-xs text-[#F5DEB3]/50 mt-2">
-              Balance: 50,000.00 USDC
-            </p>
-          </div>
-
-          {/* Expected Yield */}
-          <div className="grid grid-cols-2 gap-4 p-4 bg-[#0B1437] rounded-lg border border-[#D4AF37]/20">
-            <div>
-              <p className="text-xs text-[#F5DEB3]/60 mb-1">Expected Annual Yield</p>
-              <p className="text-xl text-[#D4AF37]">${expectedYield.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#F5DEB3]/60 mb-1">APR</p>
-              <p className="text-xl text-white">8.75%</p>
-            </div>
-          </div>
-
-          {/* Insurance Coverage */}
-          <div className="flex items-start gap-3 p-4 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg">
-            <Shield className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-[#F5DEB3] mb-1">Insurance Coverage</p>
-              <p className="text-xs text-[#F5DEB3]/70">
-                Your deposit is covered up to 95% by the protocol insurance fund. 
-                In the event of bad debt, losses are absorbed by the insurance pool before affecting depositors.
-              </p>
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="flex items-start gap-3 p-4 bg-[#1a1f3a]/50 border border-[#D4AF37]/20 rounded-lg">
-            <Info className="w-5 h-5 text-[#F5DEB3]/60 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-[#F5DEB3]/80 mb-1">How it works</p>
-              <p className="text-xs text-[#F5DEB3]/60">
-                Your USDC is pooled with other providers and lent to credit-worthy borrowers. 
-                Interest earned is distributed proportionally based on your share of the pool. 
-                You can withdraw your funds at any time, subject to available liquidity.
-              </p>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <Button 
-            className="w-full bg-[#D4AF37] hover:bg-[#C19A2E] text-[#0B1437] font-medium h-12 mt-4"
-            disabled={!amount || parseFloat(amount) <= 0}
-          >
-            <Droplet className="w-4 h-4 mr-2" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Deposit Interface */}
+        <Card className="lg:col-span-2 bg-[#0a0e17] border-[#d4af37]/20 p-8">
+          <h2 className="text-lg text-white mb-6 font-bold flex items-center gap-2">
+            <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=026" className="w-6 h-6" alt="USDC" />
             Deposit USDC
-          </Button>
+          </h2>
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-xs text-gray-400">Amount</label>
+                <span className="text-xs text-[#d4af37] flex items-center gap-1">
+                  <Wallet size={12} />
+                  Balance: {usdcBal.toFixed(2)} USDC
+                </span>
+              </div>
+
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="bg-[#01060f] border-[#d4af37]/30 text-white text-3xl h-16 pr-24 focus:border-[#d4af37] transition-colors"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAmount(String(usdcBal))}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#d4af37] hover:bg-[#d4af37]/10 font-bold"
+                >
+                  MAX
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 p-4 bg-[#01060f] rounded-xl border border-white/5">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Expected Yearly Yield</p>
+                <p className="text-lg text-[#d4af37] font-mono">
+                  ${expectedYield.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Active Rate</p>
+                <p className="text-lg text-white font-mono">{currentAPR.toFixed(2)}%</p>
+              </div>
+            </div>
+
+            <Button
+              className="w-full bg-[#d4af37] hover:bg-[#b8860b] text-[#0a0e17] font-bold h-12 text-sm uppercase tracking-wider transition-all"
+              disabled={!amount || Number(amount) <= 0 || loading || !isConnected}
+              onClick={handleDeposit}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Droplet className="w-4 h-4 mr-2" />}
+              {isConnected ? "Confirm Deposit" : "Connect Wallet to Deposit"}
+            </Button>
+
+            <div className="text-[10px] text-gray-500">
+              Uses USDC at <span className="text-gray-400">{addresses.USDC}</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Info & Insurance Sidebar */}
+        <div className="space-y-4">
+          <Card className="bg-[#d4af37]/5 border border-[#d4af37]/20 p-6">
+            <div className="flex items-start gap-3">
+              <Shield className="w-6 h-6 text-[#d4af37] flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-bold text-white mb-2">Protocol Insurance</h4>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Insurance pool address: {addresses.INSURANCE_POOL}. Coverage percent depends on onchain rules.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-[#01060f] border border-white/5 p-6">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-bold text-white mb-2">Pool Stats</h4>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Pool: {poolStats.poolAddress || "…"}
+                  <br />
+                  Available: {poolStats.availableLiquidity.toFixed(2)} USDC
+                  <br />
+                  Delegated: {poolStats.totalDelegated.toFixed(2)} USDC
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

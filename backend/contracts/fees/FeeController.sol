@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Errors } from "../libraries/Errors.sol";
 import { InsuranceFund } from "../insurance/InsuranceFund.sol";
 
 contract FeeController {

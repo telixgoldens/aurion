@@ -1,0 +1,11 @@
+{
+  "chainId": 421614,
+  "name": "arbitrumSepolia",
+  "TestUSDC": "0x7c078e5068c21D2Cab28Bd03Bec8296aEA9269d3",
+  "TokenFaucet": "0x8D44C5d1e2D6dB1480B6B0Db66E690F3F4a2644b",
+  "CreditOracle": "0xB18B6671175347d51eB751042103EC6f7b3A3134",
+  "LiquidationController": "0xa868BD842b1E5b8291Bbb391712bAa664Ba1C6ee",
+  "CreditRouter": "0xf11809CC12EFE4925878f47b716DdCe12Ad21488",
+  "CreditManager": "0x8DA306cC1627dC528Dc4B4d1C46FdCbDa6F911eA",
+  "InsurancePool": "0x1Fa1Ca5577Ae41C2E800BFCdc0dFebdDEBaa7228"
+}

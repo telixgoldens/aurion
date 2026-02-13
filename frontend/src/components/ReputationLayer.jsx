@@ -5,7 +5,6 @@ const ReputationLayer = () => {
     <section className="py-5" style={{ background: 'rgba(0,0,0,0.2)' }}>
       <div className="container">
         <div className="row align-items-center g-5">
-          {/* Left: Branding & Logic */}
           <div className="col-lg-5">
             <h2 className="display-5 fw-bold mb-4">
               Monetize <span className="text-gold">Reputation</span>
@@ -25,8 +24,6 @@ const ReputationLayer = () => {
               </li>
             </ul>
           </div>
-
-          {/* Right: The "Aurion Score" Card */}
           <div className="col-lg-7">
             <div className="credit-card-ui border-gold shadow-lg p-5 text-center">
               <div className="mb-3">

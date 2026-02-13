@@ -25,15 +25,15 @@ const helpItems = [
 
 export default function Sidebar({ currentPage, onNavigate }) {
   return (
-    <div className="w-64 h-screen bg-[#0B1437] border-r border-[#D4AF37]/20 flex flex-col">
+    <div className="w-64 min-h-screen bg-[#0a0e17] border-r border-[#d4af37]/20 flex flex-col shadow-2xl z-20">
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-[#D4AF37]/20">
-        <h1 className="text-xl font-semibold text-white">Arbitrum Credit</h1>
-        <p className="text-xs text-[#F5DEB3]/60 mt-1">On-Chain Credit Protocol</p>
+      <div className="px-6 py-8 border-b border-[#d4af37]/20">
+        <h1 className="text-2xl font-bold text-white tracking-tight">AURION</h1>
+        <p className="text-[10px] text-[#d4af37] uppercase tracking-widest mt-1">Credit Abstraction</p>
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -42,14 +42,14 @@ export default function Sidebar({ currentPage, onNavigate }) {
               key={item.id}
               onClick={() => onNavigate(item.id)}
               className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
+                w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
                 ${isActive 
-                  ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30' 
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
+                  ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/30 shadow-lg shadow-[#d4af37]/5' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }
               `}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[#d4af37]' : ''}`} />
               <span>{item.label}</span>
             </button>
           );
@@ -57,14 +57,15 @@ export default function Sidebar({ currentPage, onNavigate }) {
       </nav>
 
       {/* Help Section */}
-      <div className="px-3 pb-4 space-y-1 border-t border-[#D4AF37]/20 pt-4">
+      <div className="px-4 pb-6 space-y-2 border-t border-[#d4af37]/10 pt-6">
+        <p className="px-4 text-[10px] uppercase text-gray-500 font-bold tracking-widest mb-2">Support</p>
         {helpItems.map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
             >
               <Icon className="w-4 h-4" />
               <span>{item.label}</span>
