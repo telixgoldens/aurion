@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { ethers } from "ethers";
 import { getCreditManager } from "../lib/contracts";
-import CreditPoolAbi from "../abi/CreditPool.json";
+import CreditPool from "../abi/CreditPool.json";
 import ERC20 from "../abi/ERC20.json";
 import { fromUnits } from "../utils/format";
 
@@ -29,8 +29,6 @@ export function usePoolsData() {
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-
-      // 1) resolve pool address from manager
       const manager = getCreditManager(provider);
       const poolAddress = await manager.pool();
 
@@ -39,11 +37,11 @@ export function usePoolsData() {
         return;
       }
 
-      // 2) load pool + usdc
-      const pool = new ethers.Contract(poolAddress, CreditPoolAbi.abi, provider);
+      
+      const pool = new ethers.Contract(poolAddress, CreditPool, provider);
       const usdcAddress = await pool.USDC();
 
-      const usdc = new ethers.Contract(usdcAddress, ERC20.abi, provider);
+      const usdc = new ethers.Contract(usdcAddress, ERC20, provider);
       const [symbol, name, decimals, totalDeposits, totalDelegated, availableLiquidity] =
         await Promise.allSettled([
           usdc.symbol(),
@@ -55,20 +53,13 @@ export function usePoolsData() {
         ]);
 
       const dec = decimals.status === "fulfilled" ? Number(decimals.value) : 6;
-
       const totalDep = totalDeposits.status === "fulfilled" ? totalDeposits.value : 0n;
       const totalDel = totalDelegated.status === "fulfilled" ? totalDelegated.value : 0n;
       const avail = availableLiquidity.status === "fulfilled" ? availableLiquidity.value : 0n;
-
       const totalDepNum = fromUnits(totalDep, dec);
       const totalDelNum = fromUnits(totalDel, dec);
       const availNum = fromUnits(avail, dec);
-
-      // utilization = delegated / deposits (simple proxy)
       const utilizationValue = totalDepNum > 0 ? (totalDelNum / totalDepNum) * 100 : 0;
-
-      // NOTE: APR + insuranceCoverage are NOT in your ABIs.
-      // So we surface placeholders until contract exposes them.
       const row = {
         asset: symbol.status === "fulfilled" ? symbol.value : "USDC",
         name: name.status === "fulfilled" ? name.value : "—",
@@ -77,7 +68,6 @@ export function usePoolsData() {
         apr: "—",
         insuranceCoverage: "—",
         utilizationValue,
-        // optional raw numbers if you want
         raw: { totalDepNum, totalDelNum, availNum, poolAddress, usdcAddress },
       };
 

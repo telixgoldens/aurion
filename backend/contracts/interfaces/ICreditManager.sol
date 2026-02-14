@@ -2,10 +2,9 @@
 pragma solidity ^0.8.20;
 
 interface ICreditManager {
-    function validateBorrow(
-        address user,
-        uint256 amount
-    ) external view returns (bool);
+    function setPool(address pool) external;
+
+    function validateBorrow( address user, uint256 amount ) external view returns (bool);
 
     function onBorrow(address user, uint256 amount) external;
 
@@ -21,6 +20,6 @@ interface ICreditManager {
 
     function healthFactor(address user) external view returns (uint256);
 
-    function setPool(address pool) external;
+    
 
 }

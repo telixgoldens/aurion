@@ -1,9 +1,9 @@
 import { createConfig, http } from "wagmi";
-import { arbitrum } from "wagmi/chains";
+import { arbitrum, arbitrumSepolia } from "wagmi/chains";
 import { injected, walletConnect } from "wagmi/connectors";
 
 export const config = createConfig({
-  chains: [arbitrum],
+  chains: [arbitrum, arbitrumSepolia],
   connectors: [
     injected(),
     walletConnect({
@@ -12,5 +12,6 @@ export const config = createConfig({
   ],
   transports: {
     [arbitrum.id]: http(),
+    [arbitrumSepolia.id]: http(),
   },
 });

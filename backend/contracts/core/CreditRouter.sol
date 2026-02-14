@@ -25,12 +25,14 @@ contract CreditRouter {
     address public immutable OWNER;
 
     uint256 public closeFactorBps = 5000; 
+    mapping(address => bool) public isBorrower;
+    event BorrowerWhitelisted(address indexed borrower, bool allowed);
 
     event CreditManagerSet(address manager);
     event InsurancePoolSet(address pool);
     event CloseFactorUpdated(uint256 bps);
     event CreditPoolSet(address pool);
-    event CreditDelegated(address indexed pool, address indexed user, uint256 amount);
+    event CreditDelegated( address indexed user, uint256 amount);
 
 
     event Liquidated(
@@ -92,8 +94,15 @@ contract CreditRouter {
         if (address(creditPool) != address(0)) revert Errors.NotAuthorized(); 
         if (pool == address(0)) revert Errors.NotAuthorized(); 
         creditPool = CreditPool(pool);
+        creditManager.setPool(pool);
         emit CreditPoolSet(pool);
     }
+
+    function setBorrower(address borrower, bool allowed) external onlyOwner {
+    isBorrower[borrower] = allowed;
+    emit BorrowerWhitelisted(borrower, allowed);
+    }
+
 
     function delegateCredit(address user, uint256 amount) external onlyOwner {
         if (address(creditPool) == address(0)) revert Errors.NotAuthorized();
@@ -101,7 +110,7 @@ contract CreditRouter {
         if (amount == 0) revert Errors.InvalidAmount();
 
         creditPool.delegateCredit(user, amount);
-        emit CreditDelegated(address(creditPool), user, amount);
+        emit CreditDelegated( user, amount);
     }
 
     function setCloseFactorBps(uint256 bps) external onlyOwner {

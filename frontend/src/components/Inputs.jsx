@@ -89,7 +89,6 @@ export const SelectItem = React.forwardRef(({ className, children, ...props }, r
 ));
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
-// --- SWITCH ---
 export const Switch = React.forwardRef(({ className, ...props }, ref) => (
   <SwitchPrimitive.Root
     className={cn(

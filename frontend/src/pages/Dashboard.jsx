@@ -1,12 +1,12 @@
 import { Card } from "../components/CoreUi";
 import { ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
-import { useDashboard } from "../../hooks/useDashboard";
-import { useRouterActivity } from "../../hooks/useRouterActivity";
-import { formatCurrency, formatAddress } from "../../utils/format";
+import { useDashboard } from "../hooks/useDashboard";
+import { useRouterActivity } from "../hooks/useRouterActivity";
+import { formatCurrency, formatAddress } from "../utils/format";
 
 const CREDIT_ROUTER_ADDRESS = import.meta.env.VITE_CREDIT_ROUTER;
 
-export default function Dashboard() {
+function Dashboard() {
   const { data, refetch } = useDashboard();
   const { activity, loading: activityLoading, refetch: refetchActivity } =
     useRouterActivity(CREDIT_ROUTER_ADDRESS);
@@ -34,7 +34,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Credit Overview */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg text-white/90">Credit Overview</h2>
@@ -50,7 +49,6 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {creditOverview.map((item) => {
             const Icon = item.icon;
@@ -62,7 +60,6 @@ export default function Dashboard() {
                   </div>
                   <div className="text-xs text-[#F5DEB3]/50">Live</div>
                 </div>
-
                 <div className="text-3xl text-white mb-1">{item.value}</div>
                 <div className="text-sm text-[#F5DEB3]/70">{item.label}</div>
               </Card>
@@ -70,8 +67,6 @@ export default function Dashboard() {
           })}
         </div>
       </section>
-
-      {/* Risk & Health */}
       <section>
         <h2 className="text-lg text-white/90 mb-4">Risk & Health</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,7 +80,6 @@ export default function Dashboard() {
             </div>
             <p className="text-xs text-[#F5DEB3]/50 mt-2">{utilizationLabel}</p>
           </Card>
-
           <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm text-[#F5DEB3]/70">Health Factor</h3>
@@ -111,8 +105,6 @@ export default function Dashboard() {
           </Card>
         </div>
       </section>
-
-      {/* Recent Activity (Onchain) */}
       <section>
         <h2 className="text-lg text-white/90 mb-4">Recent Activity</h2>
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20">
@@ -144,7 +136,6 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-
                   <div className="text-right">
                     <div className="text-sm text-white">
                       Repay {a.repayAmount} • Seize {a.seizeAmount}
@@ -159,3 +150,4 @@ export default function Dashboard() {
     </div>
   );
 }
+export default Dashboard;

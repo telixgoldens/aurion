@@ -15,8 +15,7 @@ export function useTokenMeta(tokenAddress, enabled = true) {
       setLoading(true);
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const token = new ethers.Contract(tokenAddress, ERC20.abi, provider);
-
+        const token = new ethers.Contract(tokenAddress, ERC20, provider);
         const [symbol, decimals, name] = await Promise.allSettled([
           token.symbol?.(),
           token.decimals?.(),

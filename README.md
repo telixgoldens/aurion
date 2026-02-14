@@ -252,19 +252,19 @@ aurion-protocol/
 - 🔄 Initial test coverage
 
 ### Phase 2: Expansion (Months 5-8)
-- ⏳ Compound adapter
-- ⏳ Delegated Credit Pools
-- ⏳ Credit scoring system
-- ⏳ Insurance Fund
-- ⏳ Security audits
-- ⏳ Mainnet beta (capped TVL)
+-  Compound adapter
+-  Delegated Credit Pools
+-  Credit scoring system
+-  Insurance Fund
+-  Security audits
+-  Mainnet beta (capped TVL)
 
 ### Phase 3: Maturity (Months 9-12)
-- ⏳ Tradable credit positions
-- ⏳ DAO account types
-- ⏳ Structured credit products
-- ⏳ Full governance activation
-- ⏳ TVL cap removal
+-  Tradable credit positions
+-  DAO account types
+-  Structured credit products
+-  Full governance activation
+-  TVL cap removal
 
 ## Deployment
 

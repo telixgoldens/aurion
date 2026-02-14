@@ -17,7 +17,6 @@ const getContract = (address, abi, providerOrSigner) => {
   return new ethers.Contract(address, abi, providerOrSigner);
 };
 
-// --- Core protocol contracts (Arbitrum Sepolia) ---
 export const addresses = {
   USDC: mustGetEnv("VITE_USDC"),
   FAUCET: mustGetEnv("VITE_FAUCET"),
@@ -29,29 +28,27 @@ export const addresses = {
 export const getCreditPool = async (providerOrSigner) => {
   const manager = getCreditManager(providerOrSigner);
   const poolAddress = await manager.pool();
-  return getContract(poolAddress, CreditPool.abi, providerOrSigner);
+  return getContract(poolAddress, CreditPool, providerOrSigner);
 };
 
 export const getCreditRouter = (providerOrSigner) =>
-  getContract(addresses.CREDIT_ROUTER, CreditRouter.abi, providerOrSigner);
+  getContract(addresses.CREDIT_ROUTER, CreditRouter, providerOrSigner);
 
 export const getCreditManager = (providerOrSigner) =>
-  getContract(addresses.CREDIT_MANAGER, CreditManager.abi, providerOrSigner);
+  getContract(addresses.CREDIT_MANAGER, CreditManager, providerOrSigner);
 
 export const getInsurancePool = (providerOrSigner) =>
-  getContract(addresses.INSURANCE_POOL, InsurancePool.abi, providerOrSigner);
+  getContract(addresses.INSURANCE_POOL, InsurancePool, providerOrSigner);
 
 export const getUSDC = (providerOrSigner) =>
-  getContract(addresses.USDC, ERC20.abi, providerOrSigner);
+  getContract(addresses.USDC, ERC20, providerOrSigner);
 
 export const getFaucet = (providerOrSigner) =>
-  getContract(addresses.FAUCET, TokenFaucet.abi, providerOrSigner);
+  getContract(addresses.FAUCET, TokenFaucet, providerOrSigner);
 
-// Generic ERC20 by address (if you add more assets later)
 export const getToken = (address, providerOrSigner) =>
-  getContract(address, ERC20.abi, providerOrSigner);
+  getContract(address, ERC20, providerOrSigner);
 
-// --- UI helper functions ---
 export const readUSDCBalance = async (provider, user) => {
   const usdc = getUSDC(provider);
   const [bal, decimals, symbol] = await Promise.all([

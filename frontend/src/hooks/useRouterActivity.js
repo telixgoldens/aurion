@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { fromUnits } from "../utils/format";
 
-// Minimal ABI needed for event decoding
 const CREDIT_ROUTER_EVENTS = [
   {
     type: "event",
@@ -20,7 +19,6 @@ const CREDIT_ROUTER_EVENTS = [
   },
 ];
 
-// simple relative time
 function timeAgo(unixSeconds) {
   const diff = Math.max(0, Math.floor(Date.now() / 1000) - Number(unixSeconds));
   if (diff < 60) return `${diff}s ago`;
@@ -51,9 +49,6 @@ export function useRouterActivity(routerAddress, { lookbackBlocks = 50_000 } = {
     try {
       const latestBlock = await publicClient.getBlockNumber();
       const fromBlock = latestBlock > BigInt(lookbackBlocks) ? latestBlock - BigInt(lookbackBlocks) : 0n;
-
-      // Pull Liquidated logs for this user (as borrower or liquidator)
-      // We do 2 queries because topics OR is not supported in one filter.
       const [asUser, asLiquidator] = await Promise.all([
         publicClient.getLogs({
           address: routerAddress,
@@ -72,11 +67,7 @@ export function useRouterActivity(routerAddress, { lookbackBlocks = 50_000 } = {
       ]);
 
       const merged = [...asUser, ...asLiquidator];
-
-      // sort newest first
       merged.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-
-      // hydrate timestamps (1 block call per unique blockNumber)
       const uniqueBlocks = [...new Set(merged.map((l) => l.blockNumber.toString()))].slice(0, 30);
       const blockMap = new Map();
       await Promise.all(
@@ -89,12 +80,8 @@ export function useRouterActivity(routerAddress, { lookbackBlocks = 50_000 } = {
 
       const normalized = merged.slice(0, 20).map((log) => {
         const ts = blockMap.get(log.blockNumber.toString());
-
-        // amounts: you may want real decimals per asset, but for your TestUSDC use 6
-        // If liquidation asset is USDC, 6 is correct. Otherwise we’ll improve later.
         const repay = fromUnits(log.args.repayAmount ?? 0n, 6);
         const seize = fromUnits(log.args.seizeAmount ?? 0n, 6);
-
         const isUser = (log.args.user || "").toLowerCase() === address.toLowerCase();
 
         return {

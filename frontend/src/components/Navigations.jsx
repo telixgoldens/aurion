@@ -4,7 +4,6 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { cn } from "../../lib/utils";
 
-// --- TABS ---
 export const Tabs = TabsPrimitive.Root;
 
 export const TabsList = React.forwardRef(({ className, ...props }, ref) => (
@@ -43,7 +42,6 @@ export const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
-// --- SCROLL AREA ---
 export const ScrollArea = React.forwardRef(({ className, children, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
@@ -76,7 +74,6 @@ const ScrollBar = React.forwardRef(({ className, orientation = "vertical", ...pr
 ));
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;
 
-// --- SEPARATOR ---
 export const Separator = React.forwardRef(
   ({ className, orientation = "horizontal", decorative = true, ...props }, ref) => (
     <SeparatorPrimitive.Root

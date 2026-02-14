@@ -11,7 +11,7 @@ contract CreditPool {
 
     IERC20 public immutable USDC;
     ICreditManager public immutable CREDIT_MANAGER;
-    address public immutable CONTROLLER; // router/governance
+    address public immutable CONTROLLER; 
 
     uint256 private _totalDeposits;
     uint256 private _totalDelegated;

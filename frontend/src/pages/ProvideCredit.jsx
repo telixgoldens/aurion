@@ -1,46 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { ethers } from "ethers";
-import { Card } from "../ui/card";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { Card } from "../components/CoreUi";
+import { Button } from "../components/CoreUi";
+import { Input } from "../components/Inputs";
 import { TrendingUp, Droplet, Shield, Info, Loader2, Wallet } from "lucide-react";
+import CreditPool from "../abi/CreditPool.json"; 
+import { getBrowserProvider, getSigner } from "../lib/eth";
+import { getCreditManager, getUSDC, addresses } from "../lib/contracts";
+import { useAlert, AlertModal } from "../components/AlertModal";
 
-import CreditPool from "../../abi/CreditPool.json"; // adjust if path differs
-import { getBrowserProvider, getSigner } from "../../lib/eth";
-import { getCreditManager, getUSDC, addresses } from "../../lib/contracts";
-
-export function ProvideCredit() {
+function ProvideCredit() {
   const { address, isConnected } = useAccount();
-
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const { alertState, showAlert, closeAlert } = useAlert();
   const [usdcBal, setUsdcBal] = useState(0);
   const [poolStats, setPoolStats] = useState({
     poolAddress: "",
     totalDeposits: 0,
     availableLiquidity: 0,
     totalDelegated: 0,
-    utilization: 0, // 0..1
+    utilization: 0, 
   });
 
-  // live reads
   useEffect(() => {
     (async () => {
       if (!isConnected || !address || !window.ethereum) return;
 
       const provider = await getBrowserProvider();
-
-      // USDC balance
       const usdc = getUSDC(provider);
       const bal = await usdc.balanceOf(address);
       setUsdcBal(Number(ethers.formatUnits(bal ?? 0n, 6)));
-
-      // Pool stats
       const manager = getCreditManager(provider);
       const poolAddress = await manager.pool();
-      const pool = new ethers.Contract(poolAddress, CreditPool.abi, provider);
+      const pool = new ethers.Contract(poolAddress, CreditPool, provider);
 
       const [td, al, tdel] = await Promise.all([
         pool.totalDeposits(),
@@ -66,12 +60,9 @@ export function ProvideCredit() {
   }, [isConnected, address]);
 
   const depositAmount = parseFloat(amount) || 0;
-
-  // your curve, but utilization is live now
   const baseRate = 0.04;
   const utilizationMultiplier = 0.10;
   const currentAPR = (baseRate + utilizationMultiplier * poolStats.utilization) * 100;
-
   const expectedYield = depositAmount * (currentAPR / 100);
 
   const handleDeposit = async () => {
@@ -86,44 +77,43 @@ export function ProvideCredit() {
       if (!poolAddress) throw new Error("Pool address not available");
 
       const amountWei = ethers.parseUnits(amount.toString(), 6);
-
-      // approve USDC -> pool
       const usdc = getUSDC(signer);
       const approveTx = await usdc.approve(poolAddress, amountWei);
       await approveTx.wait();
-
-      // deposit
-      const pool = new ethers.Contract(poolAddress, CreditPool.abi, signer);
+      const pool = new ethers.Contract(poolAddress, CreditPool, signer);
       const tx = await pool.deposit(amountWei);
       await tx.wait();
-
-      // refresh balance + stats quickly
       const provider = await getBrowserProvider();
       const usdcRead = getUSDC(provider);
       const bal = await usdcRead.balanceOf(address);
       setUsdcBal(Number(ethers.formatUnits(bal ?? 0n, 6)));
 
-      alert(`Successfully deposited ${amount} USDC into the Credit Pool.`);
+      showAlert(`Successfully deposited ${amount} USDC into the Credit Pool.`, 'success', 'Deposit Successful');
       setAmount("");
     } catch (e) {
       console.error(e);
-      alert(e?.shortMessage || e?.message || "Deposit failed");
+      showAlert(e?.shortMessage || e?.message || "Deposit failed", 'error', 'Deposit Failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const totalLiquidityUsd = poolStats.totalDeposits; // USDC ~ USD
+  const totalLiquidityUsd = poolStats.totalDeposits; 
   const utilizationPct = poolStats.utilization * 100;
 
   return (
     <div className="max-w-5xl space-y-6">
+      <AlertModal 
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
       <div>
         <h1 className="text-2xl text-white mb-2">Provide Delegated Credit</h1>
         <p className="text-sm text-[#d4af37]/70">Deposit into the protocol pool and earn yield.</p>
       </div>
-
-      {/* Pool Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-[#0a0e17] border-[#d4af37]/20 p-5 shadow-lg relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-20 h-20 bg-[#d4af37]/5 rounded-bl-full transition-all group-hover:bg-[#d4af37]/10"></div>
@@ -135,7 +125,6 @@ export function ProvideCredit() {
             ${totalLiquidityUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </div>
         </Card>
-
         <Card className="bg-[#0a0e17] border-[#d4af37]/20 p-5 shadow-lg relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-20 h-20 bg-[#d4af37]/5 rounded-bl-full transition-all group-hover:bg-[#d4af37]/10"></div>
           <div className="flex items-center gap-2 mb-3 relative z-10">
@@ -144,7 +133,6 @@ export function ProvideCredit() {
           </div>
           <div className="text-2xl text-white font-mono">{utilizationPct.toFixed(2)}%</div>
         </Card>
-
         <Card className="bg-[#0a0e17] border-[#d4af37]/20 p-5 shadow-lg relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-20 h-20 bg-[#d4af37]/5 rounded-bl-full transition-all group-hover:bg-[#d4af37]/10"></div>
           <div className="flex items-center gap-2 mb-3 relative z-10">
@@ -154,9 +142,7 @@ export function ProvideCredit() {
           <div className="text-2xl text-white font-mono">{currentAPR.toFixed(2)}%</div>
         </Card>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Deposit Interface */}
         <Card className="lg:col-span-2 bg-[#0a0e17] border-[#d4af37]/20 p-8">
           <h2 className="text-lg text-white mb-6 font-bold flex items-center gap-2">
             <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=026" className="w-6 h-6" alt="USDC" />
@@ -172,7 +158,6 @@ export function ProvideCredit() {
                   Balance: {usdcBal.toFixed(2)} USDC
                 </span>
               </div>
-
               <div className="relative">
                 <Input
                   type="number"
@@ -191,7 +176,6 @@ export function ProvideCredit() {
                 </Button>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4 p-4 bg-[#01060f] rounded-xl border border-white/5">
               <div>
                 <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Expected Yearly Yield</p>
@@ -204,7 +188,6 @@ export function ProvideCredit() {
                 <p className="text-lg text-white font-mono">{currentAPR.toFixed(2)}%</p>
               </div>
             </div>
-
             <Button
               className="w-full bg-[#d4af37] hover:bg-[#b8860b] text-[#0a0e17] font-bold h-12 text-sm uppercase tracking-wider transition-all"
               disabled={!amount || Number(amount) <= 0 || loading || !isConnected}
@@ -219,8 +202,6 @@ export function ProvideCredit() {
             </div>
           </div>
         </Card>
-
-        {/* Info & Insurance Sidebar */}
         <div className="space-y-4">
           <Card className="bg-[#d4af37]/5 border border-[#d4af37]/20 p-6">
             <div className="flex items-start gap-3">
@@ -233,7 +214,6 @@ export function ProvideCredit() {
               </div>
             </div>
           </Card>
-
           <Card className="bg-[#01060f] border border-white/5 p-6">
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
@@ -254,3 +234,4 @@ export function ProvideCredit() {
     </div>
   );
 }
+export default ProvideCredit;

@@ -4,12 +4,9 @@ import { getCreditPool, getERC20 } from "./contracts";
 export async function depositToCreditPool({ signer, amountHuman }) {
   const pool = getCreditPool(signer);
   const user = await signer.getAddress();
-
   const usdcAddr = await pool.USDC();
   const usdc = getERC20(usdcAddr, signer);
-
-  // Prefer reading decimals from token (safer than env)
-  const decimals = await usdc.decimals(); // USDC typically 6
+  const decimals = await usdc.decimals(); 
   const amount = ethers.parseUnits(String(amountHuman), decimals);
 
   if (amount <= 0n) throw new Error("Amount must be greater than 0");

@@ -16,14 +16,14 @@ function getRevertReason(e) {
 export const useBorrow = () => {
   const [loading, setLoading] = useState(false);
 
-  const borrowFromAave = async (aavePoolAddress, assetAddress, amount, decimals = 6) => {
+  const borrowFromAave = async (aaveAdapterAddress, assetAddress, amount, decimals = 6) => {
     setLoading(true);
     try {
       const signer = await getSigner();
       const router = getCreditRouter(signer);
 
       const tx = await router.borrowFromAave(
-        aavePoolAddress,
+        aaveAdapterAddress,
         assetAddress,
         ethers.parseUnits(amount.toString(), decimals)
       );
@@ -37,26 +37,26 @@ export const useBorrow = () => {
     }
   };
 
-  const borrowFromCompound = async (compoundAddress, assetAddress, amount, decimals = 6) => {
-    setLoading(true);
-    try {
-      const signer = await getSigner();
-      const router = getCreditRouter(signer);
+  const borrowFromCompound = async (compoundAdapterAddress, amount, decimals = 6) => {
+  setLoading(true);
+  try {
+    const signer = await getSigner();
+    const router = getCreditRouter(signer);
 
-      const tx = await router.borrowFromCompound(
-        compoundAddress,
-        assetAddress,
-        ethers.parseUnits(amount.toString(), decimals)
-      );
-      await tx.wait();
-      return tx;
-    } catch (e) {
-      console.error("Borrow failed:", e);
-      throw new Error(getRevertReason(e));
-    } finally {
-      setLoading(false);
-    }
-  };
+    const tx = await router.borrowFromCompound(
+      compoundAdapterAddress,
+      ethers.parseUnits(amount.toString(), decimals)
+    );
+    await tx.wait();
+    return tx;
+  } catch (e) {
+    console.error("Borrow failed:", e);
+    throw new Error(getRevertReason(e));
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const repay = async (assetAddress, amount, decimals = 6) => {
     setLoading(true);

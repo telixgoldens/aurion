@@ -5,16 +5,25 @@ import { IAave } from "../interfaces/IAave.sol";
 
 contract AaveAdapter {
     IAave public immutable AAVE;
+    address public immutable ROUTER;
 
-    constructor(address _aave) {
+    error NotRouter();
+
+    constructor(address _aave, address _router) {
         AAVE = IAave(_aave);
+        ROUTER = _router;
+    }
+
+    modifier onlyRouter() {
+        if (msg.sender != ROUTER) revert NotRouter();
+        _;
     }
 
     function borrow(
         address asset,
         uint256 amount,
         address onBehalfOf
-    ) external {
+    ) external onlyRouter{
         AAVE.borrow(asset, amount, 2, 0, onBehalfOf);
     }
 }
