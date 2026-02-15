@@ -1,10 +1,10 @@
 import React from 'react';
 import AurionNavbar from '../layout/Navbar';
 
-const LandingPage = ({ onEnterApp }) => {
+const LandingPage = ({ onLaunchApp }) => {
   return (
     <div className="min-h-screen bg-[#0a0e17] text-[#f8f9fa]">
-      <AurionNavbar onEnterApp={onEnterApp} />
+      <AurionNavbar onLaunchApp={onLaunchApp} />
       <header className="py-20 text-center mt-12 relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.05),transparent)] pointer-events-none"></div>   
         <div className="container mx-auto px-4 relative z-10">
@@ -23,7 +23,7 @@ const LandingPage = ({ onEnterApp }) => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button 
-              onClick={onEnterApp}
+              onClick={onLaunchApp}
               className="bg-[#d4af37] text-[#0a0e17] font-semibold px-8 py-4 rounded-full
                 hover:shadow-[0_6px_25px_rgba(212,175,55,0.5)] hover:-translate-y-1
                 transition-all duration-300 shadow-[0_4px_15px_rgba(212,175,55,0.3)]">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AurionNavbar = ({ onEnterApp }) => {
+const AurionNavbar = ({ onLaunchApp }) => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -193,7 +193,7 @@ const AurionNavbar = ({ onEnterApp }) => {
               </div>
             </div>
             <button 
-              onClick={onEnterApp}
+              onClick={onLaunchApp}
               className="bg-[#d4af37] text-[#0a0e17] font-semibold px-6 py-2.5 rounded-full
                 hover:shadow-[0_6px_25px_rgba(212,175,55,0.5)] hover:-translate-y-0.5
                 transition-all duration-300 shadow-[0_4px_15px_rgba(212,175,55,0.3)]">
@@ -296,7 +296,7 @@ const AurionNavbar = ({ onEnterApp }) => {
               )}
             </div>
             <button 
-              onClick={onEnterApp}
+              onClick={onLaunchApp}
               className="w-full bg-[#d4af37] text-[#0a0e17] font-semibold px-6 py-3 rounded-full
                 hover:shadow-[0_6px_25px_rgba(212,175,55,0.5)] hover:-translate-y-0.5
                 transition-all duration-300 shadow-[0_4px_15px_rgba(212,175,55,0.3)]">

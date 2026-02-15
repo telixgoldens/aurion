@@ -1,7 +1,8 @@
-import { ConnectWallet } from "../components/ConnectWallet"; // Ensure path is correct based on your folder structure
+import { ConnectWallet } from "../components/ConnectWallet"; 
+import { ConnectWalletButton } from "../components/ConnectWalletButton";
 import { Circle, Activity } from "lucide-react";
 
-function TopBar() {
+function TopBar({ onOpenConnect }) {
   return (
     <div className="h-20 bg-[#0a0e17] border-b border-[#d4af37]/20 px-8 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md bg-opacity-90">
       <div className="flex items-center gap-6">
@@ -15,6 +16,7 @@ function TopBar() {
         </div>
       </div>
       <div>
+        <ConnectWalletButton onClick={onOpenConnect} />
          <ConnectWallet />
       </div>
     </div>
