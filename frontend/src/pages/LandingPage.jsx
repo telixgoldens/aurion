@@ -179,7 +179,7 @@ const LandingPage = ({ onLaunchApp }) => {
                   Discord
                 </a>
                 <a
-                  href="#"
+                  href="https://github.com/telixgoldens/aurion"
                   className="text-gray-400 hover:text-[#d4af37] transition-colors duration-300 text-sm"
                 >
                   GitHub
