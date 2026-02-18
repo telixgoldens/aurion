@@ -155,7 +155,7 @@ const LandingPage = ({ onLaunchApp }) => {
                 </li>
                 <li>
                   <a
-                    href="https://x.com/Aurionprotocol_"
+                    href="#"
                     className="text-gray-400 hover:text-[#d4af37] transition-colors duration-300 text-sm"
                   >
                     Brand Assets
@@ -167,7 +167,7 @@ const LandingPage = ({ onLaunchApp }) => {
               <h6 className="text-white font-bold mb-4">Connect</h6>
               <div className="flex gap-4 lg:justify-end">
                 <a
-                  href="#"
+                  href="https://x.com/Aurionprotocol_"
                   className="text-gray-400 hover:text-[#d4af37] transition-colors duration-300 text-sm"
                 >
                   Twitter

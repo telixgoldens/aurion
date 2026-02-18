@@ -6,7 +6,8 @@ import {
   Shield, 
   Vote,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  SoapDispenserDroplet
 } from "lucide-react";
 
 const navItems = [
@@ -15,6 +16,7 @@ const navItems = [
   { id: 'provide', label: 'Provide Credit', icon: Droplet },
   { id: 'pools', label: 'Pools', icon: Layers },
   { id: 'insurance', label: 'Insurance', icon: Shield },
+  { id: 'faucet', label: 'Faucet', icon: SoapDispenserDroplet },
 ];
 
 const helpItems = [

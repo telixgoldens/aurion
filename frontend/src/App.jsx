@@ -7,6 +7,7 @@ import  Borrow  from "./components/Borrow";
 import  ProvideCredit  from "./pages/ProvideCredit";
 import  Pools  from "./pages/Pools";
 import  Insurance  from "./pages/Insurance";
+import  Faucet from "./pages/Faucet";
 import  LandingPage  from "./pages/LandingPage"; 
 import  Footer  from "./layout/Footer";   
 import WalletConnectModal from "./components/WalletConnectModal"; 
@@ -38,6 +39,8 @@ function App() {
         return <Pools />;
       case "insurance":
         return <Insurance />;
+      case "faucet":
+        return <Faucet />;
       default:
         return <Dashboard />;
     }
