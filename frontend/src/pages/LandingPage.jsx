@@ -147,7 +147,7 @@ const LandingPage = ({ onLaunchApp }) => {
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="https://aurion-docs.vercel.app"
                     className="text-gray-400 hover:text-[#d4af37] transition-colors duration-300 text-sm"
                   >
                     Documentation

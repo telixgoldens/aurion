@@ -14,7 +14,7 @@ const Footer = () => {
             </div>
             <div className="hidden md:flex gap-3 pl-4 border-l border-gray-600">
               <a 
-                href="#" 
+                href="https://aurion-docs.vercel.app" 
                 className="text-[#a0aec0] hover:text-[#d4af37] text-[0.85rem] transition-colors duration-200"
               >
                 Docs
