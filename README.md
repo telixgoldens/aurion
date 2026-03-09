@@ -36,7 +36,7 @@ All borrows execute through Aurion's **Credit Router**, which:
 - Enforces protocol-wide risk invariants
 
 ### Portable Credit Scores
-On-chain credit scoring based on:
+Onchain credit scoring based on:
 - Historical health factor maintenance
 - Repayment consistency
 - Position diversification
