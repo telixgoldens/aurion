@@ -1,35 +1,69 @@
 import { Card } from "../components/CoreUi";
 import {
   ArrowUpRight,
-  ArrowDownRight,
   DollarSign,
   TrendingUp,
   AlertTriangle,
+  Shield,
+  Activity,
+  RefreshCw,
 } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard";
-import { useAccount } from "wagmi";
-import { mockCreditScore, scoreToTier, tierMeta } from "../utils/mockCredit";
 import { useRouterActivity } from "../hooks/useRouterActivity";
 import { formatCurrency, formatAddress } from "../utils/format";
 
 const CREDIT_ROUTER_ADDRESS = import.meta.env.VITE_CREDIT_ROUTER;
 
+function getTierMeta(tier) {
+  switch (tier) {
+    case "Conservative":
+      return {
+        color: "text-emerald-400",
+        bar: "bg-emerald-500",
+        hint: "Strong repayment profile and healthy account state",
+      };
+    case "Moderate":
+      return {
+        color: "text-blue-400",
+        bar: "bg-blue-500",
+        hint: "Balanced credit profile with manageable risk",
+      };
+    case "Aggressive":
+      return {
+        color: "text-orange-400",
+        bar: "bg-orange-500",
+        hint: "Higher leverage or weaker repayment profile",
+      };
+    default:
+      return {
+        color: "text-red-400",
+        bar: "bg-red-500",
+        hint: "Restricted account with elevated protocol risk",
+      };
+  }
+}
+
 function Dashboard() {
   const { data, refetch } = useDashboard();
-  const { address } = useAccount();
   const {
     activity,
     loading: activityLoading,
     refetch: refetchActivity,
   } = useRouterActivity(CREDIT_ROUTER_ADDRESS);
+
   const limit = Number(data.limit || 0);
   const debt = Number(data.debt || 0);
   const available = Math.max(0, Number(data.available || 0));
-  const score = mockCreditScore(address);
-  const tier = scoreToTier(score);
-  const meta = tierMeta(tier);
-  const scorePct = (score / 1000) * 100;
+  const collateralValue = Number(data.collateralValue || 0);
+  const delegatedCredit = Number(data.delegatedCredit || 0);
+
+  const score = Number(data.creditScore || 0);
+  const tier = data.riskTier || "Restricted";
+  const tierMeta = getTierMeta(tier);
+  const scorePct = Math.max(0, Math.min(100, (score / 1000) * 100));
+
   const utilization = limit > 0 ? (debt / limit) * 100 : 0;
+
   const hf = Number(data.healthFactor || 0);
   const hfDisplay = !Number.isFinite(hf) ? 0 : hf;
   const isHealthy = hfDisplay >= 1;
@@ -58,23 +92,25 @@ function Dashboard() {
     },
   ];
 
+  const refreshAll = () => {
+    refetch();
+    refetchActivity();
+  };
+
   return (
     <div className="space-y-6">
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg text-white/90">Credit Overview</h2>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                refetch();
-                refetchActivity();
-              }}
-              className="text-xs text-[#D4AF37] hover:text-[#b8860b] transition-colors"
-            >
-              Refresh
-            </button>
-          </div>
+          <button
+            onClick={refreshAll}
+            className="inline-flex items-center gap-2 text-xs text-[#D4AF37] hover:text-[#b8860b] transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </button>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {creditOverview.map((item) => {
             const Icon = item.icon;
@@ -96,6 +132,7 @@ function Dashboard() {
           })}
         </div>
       </section>
+
       <section>
         <h2 className="text-lg text-white/90 mb-4">Risk & Health</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -114,6 +151,7 @@ function Dashboard() {
             </div>
             <p className="text-xs text-[#F5DEB3]/50 mt-2">{utilizationLabel}</p>
           </Card>
+
           <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm text-[#F5DEB3]/70">Health Factor</h3>
@@ -143,6 +181,7 @@ function Dashboard() {
           </Card>
         </div>
       </section>
+
       <section>
         <h2 className="text-lg text-white/90 mb-4">Credit Scoring</h2>
 
@@ -155,19 +194,54 @@ function Dashboard() {
 
             <div className="w-full h-2 bg-[#0B1437] rounded-full overflow-hidden">
               <div
-                className={`h-full ${meta.bar} rounded-full`}
+                className={`h-full ${tierMeta.bar} rounded-full`}
                 style={{ width: `${scorePct}%` }}
               />
             </div>
 
             <p className="text-xs text-[#F5DEB3]/50 mt-2">
-              Tier <span className={`font-semibold ${meta.color}`}>{tier}</span>{" "}
-              • {meta.hint}
+              Tier <span className={`font-semibold ${tierMeta.color}`}>{tier}</span>{" "}
+              • {tierMeta.hint}
             </p>
+
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
+                  Borrow Count
+                </div>
+                <div className="text-white text-lg mt-1">{data.borrows}</div>
+              </div>
+
+              <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
+                  Repay Count
+                </div>
+                <div className="text-white text-lg mt-1">{data.repays}</div>
+              </div>
+
+              <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
+                  Liquidations
+                </div>
+                <div className="text-white text-lg mt-1">{data.liquidations}</div>
+              </div>
+
+              <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
+                  Status
+                </div>
+                <div
+                  className={`text-lg mt-1 ${data.isFrozen ? "text-red-400" : "text-emerald-400"}`}
+                >
+                  {data.isFrozen ? "Frozen" : "Active"}
+                </div>
+              </div>
+            </div>
           </Card>
 
           <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
             <h3 className="text-sm text-[#F5DEB3]/70 mb-3">Score Benefits</h3>
+
             <ul className="space-y-2 text-xs text-[#F5DEB3]/60">
               <li className="flex items-center justify-between">
                 <span>Lower fees</span>
@@ -210,12 +284,35 @@ function Dashboard() {
               </li>
             </ul>
 
+            <div className="mt-4 space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-[#0B1437] border border-[#D4AF37]/10">
+                <Shield className="w-4 h-4 text-[#D4AF37] mt-0.5" />
+                <div>
+                  <div className="text-xs text-white">Collateral Contribution</div>
+                  <div className="text-sm text-[#F5DEB3]/70">
+                    {formatCurrency(collateralValue)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-[#0B1437] border border-[#D4AF37]/10">
+                <Activity className="w-4 h-4 text-[#D4AF37] mt-0.5" />
+                <div>
+                  <div className="text-xs text-white">Delegated Credit</div>
+                  <div className="text-sm text-[#F5DEB3]/70">
+                    {formatCurrency(delegatedCredit)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <p className="mt-3 text-[10px] text-[#F5DEB3]/40">
-              Mock scoring. Onchain scoring coming soon.
+              Live onchain scoring from CreditManager.
             </p>
           </Card>
         </div>
       </section>
+
       <section>
         <h2 className="text-lg text-white/90 mb-4">Recent Activity</h2>
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20">
@@ -254,6 +351,7 @@ function Dashboard() {
                       </div>
                     </div>
                   </div>
+
                   <div className="text-right">
                     <div className="text-sm text-white">
                       Repay {a.repayAmount} • Seize {a.seizeAmount}
@@ -270,4 +368,5 @@ function Dashboard() {
     </div>
   );
 }
+
 export default Dashboard;

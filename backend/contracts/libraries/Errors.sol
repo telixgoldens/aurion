@@ -13,4 +13,15 @@ library Errors {
     error InvalidLiquidationBonus();
     error RepayExceedsDebt();
     error InvalidAsset();
+    error NotOwner();
+    error ZeroAddress();
+    error AlreadySet();
+    error AlreadyInitialized();
+    error AccountFrozen();
+    error StalePriceFeed();
+    error LiquidationFailed();
+    error InsufficientLiquidity();
+    error WithdrawExceedsBalance();
 }
+
+

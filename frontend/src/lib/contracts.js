@@ -3,6 +3,8 @@ import CreditPool from "../abi/CreditPool.json";
 import CreditRouter from "../abi/CreditRouter.json";
 import CreditManager from "../abi/CreditManager.json";
 import InsurancePool from "../abi/InsurancePool.json";
+import MockAavePool from "../abi/MockAavePool.json";
+import MockCToken from "../abi/MockCToken.json";
 import TokenFaucet from "../abi/TokenFaucet.json";
 import ERC20 from "../abi/ERC20.json";
 
@@ -23,6 +25,8 @@ export const addresses = {
   CREDIT_ROUTER: mustGetEnv("VITE_CREDIT_ROUTER"),
   CREDIT_MANAGER: mustGetEnv("VITE_CREDIT_MANAGER"),
   INSURANCE_POOL: mustGetEnv("VITE_INSURANCE_POOL"),
+  MOCK_AAVE_POOL: mustGetEnv("VITE_MOCK_AAVE_POOL"),
+  MOCK_CTOKEN: mustGetEnv("VITE_MOCK_CTOKEN"),
 };
 
 export const getCreditPool = async (providerOrSigner) => {
@@ -39,6 +43,12 @@ export const getCreditManager = (providerOrSigner) =>
 
 export const getInsurancePool = (providerOrSigner) =>
   getContract(addresses.INSURANCE_POOL, InsurancePool, providerOrSigner);
+
+export const getMockAavePool = (providerOrSigner) =>
+  getContract(addresses.MOCK_AAVE_POOL, MockAavePool, providerOrSigner);
+
+export const getMockCompoundPool = (providerOrSigner) =>
+  getContract(addresses.MOCK_CTOKEN, MockCToken, providerOrSigner);
 
 export const getUSDC = (providerOrSigner) =>
   getContract(addresses.USDC, ERC20, providerOrSigner);

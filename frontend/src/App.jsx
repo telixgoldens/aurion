@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
-import  Sidebar  from "./layout/Sidebar";
-import  TopBar  from "./layout/Topbar";
-import  Dashboard  from "./pages/Dashboard";
-import  Borrow  from "./components/Borrow";
-import  ProvideCredit  from "./pages/ProvideCredit";
-import  Pools  from "./pages/Pools";
-import  Insurance  from "./pages/Insurance";
-import  Faucet from "./pages/Faucet";
-import  LandingPage  from "./pages/LandingPage"; 
-import  Footer  from "./layout/Footer";   
-import WalletConnectModal from "./components/WalletConnectModal"; 
+import Sidebar from "./layout/Sidebar";
+import TopBar from "./layout/Topbar";
+import Dashboard from "./pages/Dashboard";
+import Borrow from "./components/Borrow";
+import ProvideCredit from "./pages/ProvideCredit";
+import Pools from "./pages/Pools";
+import Insurance from "./pages/Insurance";
+import Faucet from "./pages/Faucet";
+import LandingPage from "./pages/LandingPage";
+import Footer from "./layout/Footer";
+import WalletConnectModal from "./components/WalletConnectModal";
+import AavePool from "./pages/AavePool";
+import CompoundPool from "./pages/CompoundPool";
+import Markets from "./pages/Markets";
 
 function App() {
   const { isConnected } = useAccount();
@@ -23,7 +26,7 @@ function App() {
     } else if (currentPage === "landing") {
       setCurrentPage("dashboard");
     }
-  }, [isConnected]); 
+  }, [isConnected]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -36,7 +39,13 @@ function App() {
       case "provide":
         return <ProvideCredit />;
       case "pools":
-        return <Pools />;
+        return <Pools onNavigate={setCurrentPage} />;
+      case "markets":
+        return <Markets onNavigate={setCurrentPage} />;
+      case "aave-pool":
+        return <AavePool />;
+      case "compound-pool":
+        return <CompoundPool />;
       case "insurance":
         return <Insurance />;
       case "faucet":
@@ -49,8 +58,8 @@ function App() {
   if (!isConnected) {
     return (
       <div className="bg-[#01060f] min-h-screen">
-      <LandingPage onLaunchApp={() => setConnectOpen(true)} />
-      <WalletConnectModal open={connectOpen} onClose={() => setConnectOpen(false)} />
+        <LandingPage onLaunchApp={() => setConnectOpen(true)} />
+        <WalletConnectModal open={connectOpen} onClose={() => setConnectOpen(false)} />
       </div>
     );
   }
@@ -59,7 +68,7 @@ function App() {
     <div className="flex h-screen bg-[#0B1437] overflow-hidden">
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <TopBar onOpenConnect={() => setConnectOpen(true)}/>
+        <TopBar onOpenConnect={() => setConnectOpen(true)} />
         <main className="flex-1 overflow-y-auto p-8 mb-12">
           {renderPage()}
         </main>

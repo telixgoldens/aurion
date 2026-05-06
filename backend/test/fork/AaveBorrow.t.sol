@@ -23,7 +23,7 @@ contract AaveBorrowForkTest is ForkBase {
         setUpFork();
 
         oracle = new CreditOracle();
-        adapter = new AaveAdapter(ArbitrumAddresses.AAVE_POOL);
+        adapter = new AaveAdapter(ArbitrumAddresses.AAVE_POOL, address(router));
         liquidationController = new LiquidationController(108e16); 
         router = new CreditRouter(address(0), address(oracle), address(liquidationController), address(0));
         manager = new CreditManager(address(router), address(oracle));

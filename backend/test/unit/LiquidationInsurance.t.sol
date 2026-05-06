@@ -38,16 +38,11 @@ contract LiquidationInsuranceTest is BaseTest {
         uint256 debtBefore = creditManager.totalDebt(alice);
 
         uint256 requested = 80e6;
-
-        // Router caps repay by close factor
         uint256 maxRepay = (debtBefore * router.closeFactorBps()) / 10_000;
         uint256 repayApplied = requested > maxRepay ? maxRepay : requested;
 
-        // Insurance bonus: your LiquidationController was constructed with 108e16 (1.08)
-        // bonusPaid = repayApplied * (1.08 - 1.00) = repayApplied * 0.08
-        // In 1e18 fixed point: bonus = repayApplied * (BONUS - 1e18) / 1e18
-        uint256 BONUS = 108e16; // 1.08e18
-        uint256 expectedBonus = (repayApplied * (BONUS - 1e18)) / 1e18;
+        uint256 bonus = 108e16; 
+        uint256 expectedBonus = (repayApplied * (bonus - 1e18)) / 1e18;
 
         usdc.mint(bob, 1_000_000e6);
         vm.startPrank(bob);
@@ -57,11 +52,9 @@ contract LiquidationInsuranceTest is BaseTest {
 
         vm.stopPrank();
 
-        // Debt reduced by repayApplied (not hardcoded 50e6)
         assertEq(creditManager.totalDebt(alice), debtBefore - repayApplied);
         assertTrue(creditManager.frozen(alice));
 
-        // Insurance reserves decreased by expected bonus
         uint256 reservesAfter = insurancePool.totalReserves();
         assertEq(reservesBefore - reservesAfter, expectedBonus);
     }

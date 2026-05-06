@@ -9,7 +9,7 @@ import {CreditPool} from "../contracts/pools/CreditPool.sol";
 import { InsurancePool } from "../contracts/pools/InsurancePool.sol";
 import { LiquidationController } from "../contracts/fees/LiquidationController.sol";
 import {MockAavePool} from "./mocks/MockAavePool.sol";
-import {MockCompound} from "./mocks/MockCompound.sol";
+import {MockCToken} from "./mocks/MockCToken.sol";
 import {MockOracle} from "./mocks/MockOracle.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {MockAaveAdapter} from "./mocks/MockAaveAdapter.sol";
@@ -27,16 +27,16 @@ abstract contract BaseTest is Test {
     MockAaveAdapter internal aaveAdapter;
 
     MockAavePool internal aave;
-    MockCompound internal compound;
+    MockCToken internal cToken;
     MockOracle internal oracle;
     MockERC20 internal usdc;
 
     function setUp() public virtual {
     usdc = new MockERC20("USDC", "USDC", 6); 
     oracle = new MockOracle();
-    aave = new MockAavePool();
+    aave = new MockAavePool(address(usdc));
+    cToken = new MockCToken(address(usdc));
     aaveAdapter = new MockAaveAdapter(address(aave));
-    compound = new MockCompound();
     liquidationController = new LiquidationController(108e16);
 
     router = new CreditRouter( address(0), address(oracle), address(liquidationController), address(0) );

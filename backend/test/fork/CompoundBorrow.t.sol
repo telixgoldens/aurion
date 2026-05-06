@@ -22,7 +22,7 @@ contract CompoundBorrowForkTest is ForkBase {
         setUpFork();
 
         oracle = new CreditOracle();
-        adapter = new CompoundAdapter(ArbitrumAddresses.CUSDC);
+        adapter = new CompoundAdapter(ArbitrumAddresses.CUSDC, address(router));
         liquidationController = new LiquidationController(108e16); 
         router = new CreditRouter(address(0), address(oracle), address(liquidationController), address(0));
         manager = new CreditManager(address(router), address(oracle));

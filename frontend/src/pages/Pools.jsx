@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { Card } from "../components/CoreUi";
 import { Button } from "../components/CoreUi";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/CoreUi";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/CoreUi";
 import { Shield, TrendingUp } from "lucide-react";
-import CreditPool from "../abi/CreditPool.json"; 
+import CreditPool from "../abi/CreditPool.json";
 import { useAlert, AlertModal } from "../components/AlertModal";
 import { getCreditRouter, getCreditManager, getUSDC } from "../lib/contracts";
 import { getBrowserProvider, getSigner } from "../lib/eth";
@@ -20,7 +27,7 @@ function safeDiv(a, b) {
   return a / b;
 }
 
-function Pools() {
+function Pools({ onNavigate }) {
   const [account, setAccount] = useState("");
   const [loading, setLoading] = useState(false);
   const { alertState, showAlert, closeAlert } = useAlert();
@@ -86,13 +93,7 @@ function Pools() {
     });
 
     const manager = getCreditManager(provider);
-    const [
-      poolAddress,
-      debt,
-      limit,
-      health,
-      collateral,
-    ] = await Promise.all([
+    const [poolAddress, debt, limit, health, collateral] = await Promise.all([
       manager.pool(),
       manager.totalDebt(userAddress),
       manager.creditLimit(userAddress),
@@ -114,15 +115,20 @@ function Pools() {
     });
 
     const pool = new ethers.Contract(poolAddress, CreditPool, provider);
-    const [totalDeposits, availableLiquidity, totalDelegated] = await Promise.all([
-      pool.totalDeposits(),
-      pool.availableLiquidity(),
-      pool.totalDelegated(),
-    ]);
+    const [totalDeposits, availableLiquidity, totalDelegated] =
+      await Promise.all([
+        pool.totalDeposits(),
+        pool.availableLiquidity(),
+        pool.totalDelegated(),
+      ]);
 
     const totalDepositsNum = Number(ethers.formatUnits(totalDeposits ?? 0n, 6));
-    const availableLiqNum = Number(ethers.formatUnits(availableLiquidity ?? 0n, 6));
-    const totalDelegatedNum = Number(ethers.formatUnits(totalDelegated ?? 0n, 6));
+    const availableLiqNum = Number(
+      ethers.formatUnits(availableLiquidity ?? 0n, 6),
+    );
+    const totalDelegatedNum = Number(
+      ethers.formatUnits(totalDelegated ?? 0n, 6),
+    );
     const utilized = Math.max(0, totalDepositsNum - availableLiqNum);
     const utilizationPct = safeDiv(utilized, totalDepositsNum) * 100;
 
@@ -146,7 +152,6 @@ function Pools() {
         setAccount(accounts[0]);
         await refreshReads(accounts[0]);
       } else {
-        
       }
     })();
   }, []);
@@ -171,10 +176,10 @@ function Pools() {
       await tx.wait();
 
       await refreshReads(user);
-      showAlert("Deposit successful", 'success', 'Deposit Complete');
+      showAlert("Deposit successful", "success", "Deposit Complete");
     } catch (e) {
       console.error(e);
-      showAlert(e?.shortMessage || e?.message || "Deposit failed", 'error');
+      showAlert(e?.shortMessage || e?.message || "Deposit failed", "error");
     } finally {
       setLoading(false);
     }
@@ -182,7 +187,7 @@ function Pools() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <AlertModal 
+      <AlertModal
         isOpen={alertState.isOpen}
         onClose={closeAlert}
         title={alertState.title}
@@ -192,16 +197,27 @@ function Pools() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl text-white mb-2">Credit Pools</h1>
-          <p className="text-sm text-[#F5DEB3]/70">Browse and deposit into available lending pools</p>
+          <p className="text-sm text-[#F5DEB3]/70">
+            Browse and deposit into available lending pools
+          </p>
           <div className="mt-3 text-xs text-[#F5DEB3]/60 space-y-1">
             <div>
-              Router creditManager <span className="text-white">{routerInfo.creditManager || "..."}</span>
+              Router creditManager{" "}
+              <span className="text-white">
+                {routerInfo.creditManager || "..."}
+              </span>
             </div>
             <div>
-              Router insurancePool <span className="text-white">{routerInfo.insurancePool || "..."}</span>
+              Router insurancePool{" "}
+              <span className="text-white">
+                {routerInfo.insurancePool || "..."}
+              </span>
             </div>
             <div>
-              Close factor bps <span className="text-white">{routerInfo.closeFactorBps || "..."}</span>
+              Close factor bps{" "}
+              <span className="text-white">
+                {routerInfo.closeFactorBps || "..."}
+              </span>
             </div>
             {account ? (
               <div className="pt-2 space-y-1">
@@ -209,19 +225,34 @@ function Pools() {
                   Wallet <span className="text-white">{account}</span>
                 </div>
                 <div>
-                  Credit limit <span className="text-white">{formatCurrency(credit.creditLimit)}</span>
+                  Credit limit{" "}
+                  <span className="text-white">
+                    {formatCurrency(credit.creditLimit)}
+                  </span>
                 </div>
                 <div>
-                  Total debt <span className="text-white">{formatCurrency(credit.totalDebt)}</span>
+                  Total debt{" "}
+                  <span className="text-white">
+                    {formatCurrency(credit.totalDebt)}
+                  </span>
                 </div>
                 <div>
-                  Available <span className="text-white">{formatCurrency(credit.available)}</span>
+                  Available{" "}
+                  <span className="text-white">
+                    {formatCurrency(credit.available)}
+                  </span>
                 </div>
                 <div>
-                  Health factor <span className="text-white">{credit.healthFactor.toFixed(4)}</span>
+                  Health factor{" "}
+                  <span className="text-white">
+                    {credit.healthFactor.toFixed(4)}
+                  </span>
                 </div>
                 <div>
-                  Collateral value <span className="text-white">{formatCurrency(credit.collateralValue)}</span>
+                  Collateral value{" "}
+                  <span className="text-white">
+                    {formatCurrency(credit.collateralValue)}
+                  </span>
                 </div>
               </div>
             ) : (
@@ -243,7 +274,9 @@ function Pools() {
         <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1f3a] border border-[#D4AF37]/20 rounded-lg">
           <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
           <span className="text-sm text-[#F5DEB3]/70">Total TVL</span>
-          <span className="text-sm text-white">{formatCurrency(poolLive.totalDepositsUsd)}</span>
+          <span className="text-sm text-white">
+            {formatCurrency(poolLive.totalDepositsUsd)}
+          </span>
         </div>
       </div>
       <Card className="bg-[#1a1f3a] border-[#D4AF37]/20">
@@ -251,7 +284,9 @@ function Pools() {
           <TableHeader>
             <TableRow className="border-[#D4AF37]/20 hover:bg-transparent">
               <TableHead className="text-[#F5DEB3]/70">Asset</TableHead>
-              <TableHead className="text-[#F5DEB3]/70">Total Liquidity</TableHead>
+              <TableHead className="text-[#F5DEB3]/70">
+                Total Liquidity
+              </TableHead>
               <TableHead className="text-[#F5DEB3]/70">Utilization</TableHead>
               <TableHead className="text-[#F5DEB3]/70">APR</TableHead>
               <TableHead className="text-[#F5DEB3]/70">Insurance</TableHead>
@@ -260,7 +295,10 @@ function Pools() {
           </TableHeader>
           <TableBody>
             {pools.map((pool) => (
-              <TableRow key={pool.asset} className="border-[#D4AF37]/20 hover:bg-[#D4AF37]/5">
+              <TableRow
+                key={pool.asset}
+                className="border-[#D4AF37]/20 hover:bg-[#D4AF37]/5"
+              >
                 <TableCell>
                   <div>
                     <div className="text-white font-medium">{pool.asset}</div>
@@ -279,7 +317,9 @@ function Pools() {
                     <div className="w-24 h-1.5 bg-[#0B1437] rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${pool.utilizationValue > 70 ? "bg-[#D4AF37]" : "bg-emerald-500"}`}
-                        style={{ width: `${Math.min(100, Math.max(0, pool.utilizationValue))}%` }}
+                        style={{
+                          width: `${Math.min(100, Math.max(0, pool.utilizationValue))}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -308,7 +348,25 @@ function Pools() {
           </TableBody>
         </Table>
       </Card>
+      {/* Mock Pool Markets */}
+      <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-white text-lg mb-1">Mock Lending Markets</h2>
+            <p className="text-sm text-[#F5DEB3]/60">
+              Supply and borrow from Aave and Compound mock pools to build
+              credit history.
+            </p>
+          </div>
+          <Button
+            className="bg-[#D4AF37] hover:bg-[#C19A2E] text-[#0B1437] font-semibold"
+            onClick={() => onNavigate("markets")}
+          >
+            View Markets →
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
-export default Pools
+export default Pools;
