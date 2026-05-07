@@ -6,7 +6,7 @@ import { CreditScoring } from '../components/landing/CreditScoring';
 import { ProtocolArchitecture } from '../components/landing/ProtocolArchitecture';
 import { Integrations } from '../components/landing/Integrations';
 import { ComparisonTable } from '../components/landing/ComparisonTable';
-import { Roadmap } from '../components/landing/Roadmap';
+import { Roadmap } from '../components/landing/RoadMap';
 import { StylusSection } from '../components/landing/StylusSection';
 import { FinalCTA } from '../components/landing/FinalCTA';
 import { Header } from '../components/landing/Header';
