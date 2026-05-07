@@ -11,11 +11,13 @@ import {
   TableRow,
 } from "../components/CoreUi";
 import { Shield, TrendingUp } from "lucide-react";
-import CreditPool from "../abi/CreditPool.json";
+import CreditPoolArtifact from "../abi/CreditPool.json";
 import { useAlert, AlertModal } from "../components/AlertModal";
 import { getCreditRouter, getCreditManager, getUSDC } from "../lib/contracts";
 import { getBrowserProvider, getSigner } from "../lib/eth";
 import { formatCurrency } from "../utils/format";
+
+const CreditPool = CreditPoolArtifact.abi;
 
 function pct(n) {
   if (!Number.isFinite(n)) return "0.00%";

@@ -43,9 +43,9 @@ function App() {
       case "markets":
         return <Markets onNavigate={setCurrentPage} />;
       case "aave-pool":
-        return <AavePool />;
+        return <AavePool onNavigate={setCurrentPage} />;
       case "compound-pool":
-        return <CompoundPool />;
+        return <CompoundPool onNavigate={setCurrentPage} />;
       case "insurance":
         return <Insurance />;
       case "faucet":

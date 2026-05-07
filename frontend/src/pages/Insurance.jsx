@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { Card } from "../components/CoreUi";
 import { Shield, TrendingUp, AlertCircle } from "lucide-react";
-import CreditPool from "../abi/CreditPool.json"; 
 import { getBrowserProvider } from "../lib/eth";
 import { getCreditManager, getUSDC, addresses } from "../lib/contracts";
 import { formatCurrency } from "../utils/format";
+import CreditPoolArtifact from "../abi/CreditPool.json";
 
+const CreditPool = CreditPoolArtifact.abi; 
 function classifyHealth(ratioPct) {
   if (ratioPct >= 25) return { label: "Excellent", cls: "text-emerald-400" };
   if (ratioPct >= 10) return { label: "Good", cls: "text-[#D4AF37]" };

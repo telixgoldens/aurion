@@ -4,7 +4,7 @@ import { Input } from "../components/Inputs";
 import { useMarketPool } from "../hooks/useMarketPool";
 import { getMockCompoundPool } from "../lib/contracts";
 
-function CompoundPool() {
+function CompoundPool({ onNavigate }) {
   const { stats, loading, deposit, withdraw, borrow, repay } = useMarketPool(getMockCompoundPool);
   const [amount, setAmount] = useState("");
   const [tab, setTab] = useState("deposit");
@@ -20,6 +20,14 @@ function CompoundPool() {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      {/* Back button */}
+      <button
+        onClick={() => onNavigate("markets")}
+        className="flex items-center gap-2 text-sm text-[#F5DEB3]/60 hover:text-[#D4AF37] transition-colors"
+      >
+        ← Back to Markets
+      </button>
+
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">

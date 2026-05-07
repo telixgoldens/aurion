@@ -13,10 +13,12 @@ import {
   Loader2,
   Wallet,
 } from "lucide-react";
-import CreditPool from "../abi/CreditPool.json";
+import CreditPoolArtifact from "../abi/CreditPool.json";
 import { getBrowserProvider, getSigner } from "../lib/eth";
 import { getCreditManager, getUSDC, addresses } from "../lib/contracts";
 import { useAlert, AlertModal } from "../components/AlertModal";
+
+const CreditPool = CreditPoolArtifact.abi;
 
 function ProvideCredit() {
   const { address, isConnected } = useAccount();

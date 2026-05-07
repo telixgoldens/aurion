@@ -1,12 +1,20 @@
 import { ethers } from "ethers";
-import CreditPool from "../abi/CreditPool.json";
-import CreditRouter from "../abi/CreditRouter.json";
-import CreditManager from "../abi/CreditManager.json";
-import InsurancePool from "../abi/InsurancePool.json";
-import MockAavePool from "../abi/MockAavePool.json";
-import MockCToken from "../abi/MockCToken.json";
+import CreditPoolArtifact from "../abi/CreditPool.json";
+import CreditRouterArtifact from "../abi/CreditRouter.json";
+import CreditManagerArtifact from "../abi/CreditManager.json";
+import InsurancePoolArtifact from "../abi/InsurancePool.json";
+import MockAavePoolArtifact from "../abi/MockAavePool.json";
+import MockCTokenArtifact from "../abi/MockCToken.json";
 import TokenFaucet from "../abi/TokenFaucet.json";
 import ERC20 from "../abi/ERC20.json";
+
+const CreditPool    = CreditPoolArtifact.abi;
+const CreditRouter  = CreditRouterArtifact.abi;
+const CreditManager = CreditManagerArtifact.abi;
+const InsurancePool = InsurancePoolArtifact.abi;
+const MockAavePool  = MockAavePoolArtifact.abi;
+const MockCToken    = MockCTokenArtifact.abi;
+
 
 const mustGetEnv = (key) => {
   const v = import.meta.env[key];
