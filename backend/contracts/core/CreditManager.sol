@@ -5,21 +5,14 @@ import {Errors} from "../libraries/Errors.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {ICreditScoreEngine} from "../interfaces/ICreditScoreEngine.sol";
 
-/// @title CreditManager
-/// @notice Central state coordinator for all credit accounts.
-///         Credit scoring and rate math are delegated to the Arbitrum Stylus
-///         CreditScoreEngine (WASM) for cheaper, more complex computation.
-contract CreditManager is ICreditManager {
-    // ─── Roles ────────────────────────────────────────────────────────────────
 
+contract CreditManager is ICreditManager {
     address public router;
     address public oracle;
     address public pool;
 
-    /// @notice Arbitrum Stylus CreditScoreEngine — handles all score math in WASM.
     ICreditScoreEngine public scoreEngine;
 
-    // ─── Per-user state ───────────────────────────────────────────────────────
 
     mapping(address => uint256) private _collateralValue;
     mapping(address => uint256) private _delegatedCredit;
@@ -31,15 +24,12 @@ contract CreditManager is ICreditManager {
     mapping(address => uint256) public repaymentCount;
     mapping(address => uint256) public liquidationCount;
 
-    /// @notice Per-protocol debt tracking — fed into cross-protocol score.
     mapping(address => uint256) public aaveDebt;
     mapping(address => uint256) public compoundDebt;
 
-    /// @notice Utilization snapshot 7 days ago — fed into volatility calculation.
     mapping(address => uint256) public prevUtilizationBps;
     mapping(address => uint256) public prevUtilizationTimestamp;
 
-    // ─── Events ───────────────────────────────────────────────────────────────
 
     event BorrowRecorded(address indexed user, uint256 amount, uint256 newDebt);
     event RepayRecorded(address indexed user, uint256 amount, uint256 newDebt);
@@ -50,7 +40,6 @@ contract CreditManager is ICreditManager {
     event PoolSet(address pool);
     event UtilizationSnapshotted(address indexed user, uint256 utilizationBps);
 
-    // ─── Modifiers ────────────────────────────────────────────────────────────
 
     modifier onlyRouter() {
         if (msg.sender != router) revert Errors.NotAuthorized();
@@ -62,7 +51,6 @@ contract CreditManager is ICreditManager {
         _;
     }
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
 
     constructor(address _router, address _oracle) {
         if (_router == address(0)) revert Errors.ZeroAddress();
@@ -71,9 +59,6 @@ contract CreditManager is ICreditManager {
         oracle = _oracle;
     }
 
-    // ─── Admin setters ────────────────────────────────────────────────────────
-
-    /// @notice Set the Stylus score engine. One-time — cannot be replaced.
     function setScoreEngine(address _engine) external onlyRouter {
         if (address(scoreEngine) != address(0)) revert Errors.AlreadySet();
         if (_engine == address(0)) revert Errors.ZeroAddress();
@@ -81,7 +66,6 @@ contract CreditManager is ICreditManager {
         emit ScoreEngineSet(_engine);
     }
 
-    /// @notice Set the CreditPool. One-time.
     function setPool(address _pool) external onlyRouter {
         if (pool != address(0)) revert Errors.AlreadySet();
         if (_pool == address(0)) revert Errors.ZeroAddress();
@@ -97,19 +81,14 @@ contract CreditManager is ICreditManager {
         _delegatedCredit[user] = value;
     }
 
-    // ─── Protocol-specific debt tracking ─────────────────────────────────────
-
-    /// @notice Called by CreditRouter when a borrow is routed to Aave.
     function recordAaveBorrow(address user, uint256 amount) external onlyRouter {
         aaveDebt[user] += amount;
     }
 
-    /// @notice Called by CreditRouter when a borrow is routed to Compound.
     function recordCompoundBorrow(address user, uint256 amount) external onlyRouter {
         compoundDebt[user] += amount;
     }
 
-    /// @notice Called by CreditRouter on repayment — reduces per-protocol debt.
     function recordAaveRepay(address user, uint256 amount) external onlyRouter {
         uint256 d = aaveDebt[user];
         aaveDebt[user] = amount >= d ? 0 : d - amount;
@@ -119,8 +98,6 @@ contract CreditManager is ICreditManager {
         uint256 d = compoundDebt[user];
         compoundDebt[user] = amount >= d ? 0 : d - amount;
     }
-
-    // ─── Lifecycle hooks ──────────────────────────────────────────────────────
 
     function validateBorrow(address user, uint256 amount) external view override returns (bool) {
         if (frozen[user]) return false;
@@ -177,13 +154,10 @@ contract CreditManager is ICreditManager {
         emit Frozen(user);
     }
 
-    /// @notice Unfreeze an account — allows router to reinstate a user after review.
     function unfreeze(address user) external onlyRouter {
         frozen[user] = false;
         emit Unfrozen(user);
     }
-
-    // ─── Views ────────────────────────────────────────────────────────────────
 
     function totalDebt(address user) external view override returns (uint256) {
         return _totalDebt[user];
@@ -209,8 +183,6 @@ contract CreditManager is ICreditManager {
         return (credit * 1e18) / debt;
     }
 
-    /// @notice Credit score — delegates to Stylus engine if set, falls back to
-    ///         on-chain calculation otherwise (graceful degradation during deploy).
     function creditScore(address user) public view returns (uint256) {
         if (address(scoreEngine) != address(0)) {
             return scoreEngine.computeCreditScore(
@@ -220,23 +192,20 @@ contract CreditManager is ICreditManager {
                 _accountAgeDays(user),
                 repaymentCount[user],
                 liquidationCount[user],
-                aaveDebt[user],
-                compoundDebt[user],
+                _protocolCount(user),
                 prevUtilizationBps[user]
             );
         }
-        // Fallback: simplified on-chain scoring (no cross-protocol, no volatility)
         return _fallbackCreditScore(user);
     }
 
-    /// @notice Full score breakdown from the Stylus engine — for frontend display.
     function creditScoreBreakdown(address user) external view returns (
         uint256 ageScore,
         uint256 healthScore,
         uint256 repayScore,
         uint256 delegatedScore,
-        uint256 crossProtocolScore,
-        uint256 volatilityDiscount,
+        uint256 diversityScore,
+        uint256 volatilityPenalty,
         uint256 utilizationPenalty,
         uint256 liquidationPenalty
     ) {
@@ -248,14 +217,11 @@ contract CreditManager is ICreditManager {
             _accountAgeDays(user),
             repaymentCount[user],
             liquidationCount[user],
-            aaveDebt[user],
-            compoundDebt[user],
+            _protocolCount(user),
             prevUtilizationBps[user]
         );
     }
 
-    /// @notice Legacy 6-value scoreBreakdown — satisfies original ICreditManager interface.
-    ///         Use creditScoreBreakdown() for the full 8-value Stylus breakdown.
     function scoreBreakdown(address user)
         external
         view
@@ -306,7 +272,6 @@ contract CreditManager is ICreditManager {
         isFrozen   = frozen[user];
     }
 
-    // ─── Internal helpers ─────────────────────────────────────────────────────
 
     function _tierFromScore(uint256 score) internal pure returns (uint8) {
         if (score >= 700) return 3;
@@ -315,13 +280,17 @@ contract CreditManager is ICreditManager {
         return 0;
     }
 
+    function _protocolCount(address user) internal view returns (uint256 count) {
+        if (aaveDebt[user] > 0) count++;
+        if (compoundDebt[user] > 0) count++;
+    }
+
     function _accountAgeDays(address user) internal view returns (uint256) {
         uint256 openedAt = accountOpenedAt[user];
         if (openedAt == 0 || block.timestamp <= openedAt) return 0;
         return (block.timestamp - openedAt) / 1 days;
     }
 
-    /// @notice Snapshot utilization every 7 days for volatility tracking.
     function _snapshotUtilization(address user) internal {
         if (block.timestamp >= prevUtilizationTimestamp[user] + 7 days) {
             uint256 limit = _collateralValue[user] + _delegatedCredit[user];
@@ -332,7 +301,6 @@ contract CreditManager is ICreditManager {
         }
     }
 
-    /// @notice Simplified fallback scoring used before Stylus engine is deployed.
     function _fallbackCreditScore(address user) internal view returns (uint256) {
         uint256 ageDays = _accountAgeDays(user);
         uint256 ageScore = ageDays >= 180 ? 150 : (ageDays * 150) / 180;
@@ -374,7 +342,6 @@ contract CreditManager is ICreditManager {
         return score > 1000 ? 1000 : score;
     }
 
-    // ─── Individual score component helpers (used by legacy scoreBreakdown) ───
 
     function _accountAgeScore(address user) internal view returns (uint256) {
         uint256 ageDays = _accountAgeDays(user);

@@ -16,22 +16,15 @@ import {MockAavePool} from "../test/mocks/MockAavePool.sol";
 import {MockCToken} from "../test/mocks/MockCToken.sol";
 import {AaveAdapter} from "../contracts/adapters/AaveAdapter.sol";
 import {CompoundAdapter} from "../contracts/adapters/CompoundAdapter.sol";
-import {ICreditScoreEngine} from "../contracts/interfaces/ICreditScoreEngine.sol";
 
 contract DeploySepolia is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
 
-        // --- Params ---
         uint256 bonus = 108e16;
         uint256 faucetClaim = 1_000e6;
         uint256 faucetCooldown = 3600;
-
-        // --- Optional: wire Stylus engine in the same run ---
-        // Set STYLUS_ENGINE in your .env after `cargo stylus deploy`.
-        // If not set, engine stays unwired — call setScoreEngine() later.
-        address stylusEngine = vm.envOr("STYLUS_ENGINE", address(0));
 
         vm.startBroadcast(pk);
 
@@ -61,7 +54,6 @@ contract DeploySepolia is Script {
         CreditPool creditPool = new CreditPool(address(usdc), address(manager), address(router));
         router.setCreditPool(address(creditPool));
 
-
         // 7) Deploy mock pools and seed with liquidity
         MockAavePool mockAave = new MockAavePool(address(usdc));
         MockCToken mockCToken = new MockCToken(address(usdc));
@@ -73,20 +65,6 @@ contract DeploySepolia is Script {
         // 8) Adapters point to mocks, router-only access
         AaveAdapter aaveAdapter = new AaveAdapter(address(mockAave), address(router));
         CompoundAdapter compoundAdapter = new CompoundAdapter(address(mockCToken), address(router));
-
-        // 9) Wire Stylus score engine if already deployed
-        if (stylusEngine != address(0)) {
-            // Initialize the Stylus contract (sets deployer as owner)
-            ICreditScoreEngine(stylusEngine).initialize();
-
-            // Authorise CreditManager to call the engine
-            ICreditScoreEngine(stylusEngine).setAuthorised(address(manager), true);
-
-            // Wire engine into CreditManager via router
-            router.setScoreEngine(stylusEngine);
-
-            console2.log("ScoreEngine initialised and wired:", stylusEngine);
-        }
 
         vm.stopBroadcast();
 
@@ -103,16 +81,10 @@ contract DeploySepolia is Script {
         console2.log("CompoundAdapter:      ", address(compoundAdapter));
         console2.log("MockAavePool:         ", address(mockAave));
         console2.log("MockCToken:           ", address(mockCToken));
-        if (stylusEngine != address(0)) {
-            console2.log("StylusScoreEngine:    ", stylusEngine);
-        } else {
-            console2.log("StylusScoreEngine:     NOT YET DEPLOYED");
-            console2.log("  -> deploy with: cargo stylus deploy --endpoint $RPC");
-            console2.log("  -> then wire:   cast send", address(router),
-                "\"setScoreEngine(address)\" <STYLUS_ADDR> --private-key $PRIVATE_KEY");
-        }
+        console2.log("StylusScoreEngine:     wire after deploy via cast:");
+        console2.log("  cast send <ROUTER>  \"setScoreEngine(address)\" 0xf1914f16ee1135cac49cd48e5ad2ad036792602e");
+        console2.log("  cast send <STYLUS>  \"setAuthorised(address,bool)\" <MANAGER> true");
 
-        // --- Write deployments/<chainId>.json ---
         _writeJson(
             block.chainid,
             deployer,
@@ -127,8 +99,7 @@ contract DeploySepolia is Script {
             address(aaveAdapter),
             address(compoundAdapter),
             address(mockAave),
-            address(mockCToken),
-            stylusEngine
+            address(mockCToken)
         );
     }
 
@@ -146,8 +117,7 @@ contract DeploySepolia is Script {
         address aaveAdapter,
         address compoundAdapter,
         address mockAave,
-        address mockCToken,
-        address stylusEngine
+        address mockCToken
     ) internal {
         string memory path = string.concat(
             "./deployments/", vm.toString(chainId), ".json"
@@ -170,7 +140,7 @@ contract DeploySepolia is Script {
             '  "compoundAdapter": "',  vm.toString(compoundAdapter), '",\n',
             '  "mockAavePool": "',     vm.toString(mockAave),   '",\n',
             '  "mockCToken": "',       vm.toString(mockCToken), '",\n',
-            '  "stylusScoreEngine": "',vm.toString(stylusEngine),'"\n',
+            '  "stylusScoreEngine": "0xf1914f16ee1135cac49cd48e5ad2ad036792602e"\n',
             '}'
         );
 

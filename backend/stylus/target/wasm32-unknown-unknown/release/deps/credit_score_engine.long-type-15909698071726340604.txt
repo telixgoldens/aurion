@@ -1,0 +1,1 @@
+(stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>, stylus_sdk::alloy_primitives::Uint<256, 4>)

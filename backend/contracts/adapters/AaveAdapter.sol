@@ -31,8 +31,6 @@ contract AaveAdapter {
         AAVE.borrow(asset, amount, 2, 0, onBehalfOf);
     }
 
-    /// @notice Repay a variable-rate borrow on behalf of a user.
-    ///         The router transfers tokens to this adapter before calling.
     function repay(
         address asset,
         uint256 amount,

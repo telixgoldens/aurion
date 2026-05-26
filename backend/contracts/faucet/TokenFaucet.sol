@@ -11,7 +11,7 @@ contract TokenFaucet {
     address public owner;
     address public token;
 
-    uint256 public claimAmount;     // in token smallest units
+    uint256 public claimAmount;    
     uint256 public cooldownSeconds;
 
     mapping(address => uint256) public lastClaimAt;

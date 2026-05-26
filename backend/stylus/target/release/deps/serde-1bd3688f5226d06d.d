@@ -1,0 +1,14 @@
+/mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/deps/serde-1bd3688f5226d06d.d: /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/build/serde-84a0a29a01e7a271/out/private.rs
+
+/mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/deps/libserde-1bd3688f5226d06d.rlib: /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/build/serde-84a0a29a01e7a271/out/private.rs
+
+/mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/deps/libserde-1bd3688f5226d06d.rmeta: /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/build/serde-84a0a29a01e7a271/out/private.rs
+
+/home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/telixgoldens/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/build/serde-84a0a29a01e7a271/out/private.rs:
+
+# env-dep:OUT_DIR=/mnt/c/Users/HP/Desktop/aurion/backend/stylus/target/release/build/serde-84a0a29a01e7a271/out

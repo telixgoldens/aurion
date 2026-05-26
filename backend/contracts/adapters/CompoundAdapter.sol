@@ -27,8 +27,6 @@ contract CompoundAdapter {
         require(C_TOKEN.borrow(amount) == 0, "COMPOUND_BORROW_FAIL");
     }
 
-    /// @notice Repay a Compound borrow.
-    ///         The router transfers tokens to this adapter before calling.
     function repay(uint256 amount) external onlyRouter {
         address underlying = C_TOKEN.underlying();
         IERC20(underlying).forceApprove(address(C_TOKEN), amount);

@@ -2,10 +2,11 @@
 pragma solidity ^0.8.20;
 
 interface ICreditManager {
-    // ─── Pool setup ───────────────────────────────────────────────────────────
+    function aaveDebt(address user) external view returns (uint256);
+    function compoundDebt(address user) external view returns (uint256);
+    function setCollateralValue(address user, uint256 value) external;
     function setPool(address pool) external;
 
-    // ─── Core lifecycle ───────────────────────────────────────────────────────
     function validateBorrow(address user, uint256 amount) external view returns (bool);
     function onBorrow(address user, uint256 amount) external;
     function onRepay(address user, uint256 amount) external;
@@ -13,16 +14,12 @@ interface ICreditManager {
     function freeze(address user) external;
     function unfreeze(address user) external;
 
-    // ─── Per-protocol debt tracking (feeds Stylus cross-protocol score) ───────
     function recordAaveBorrow(address user, uint256 amount) external;
     function recordCompoundBorrow(address user, uint256 amount) external;
     function recordAaveRepay(address user, uint256 amount) external;
     function recordCompoundRepay(address user, uint256 amount) external;
-
-    // ─── Score engine ─────────────────────────────────────────────────────────
     function setScoreEngine(address engine) external;
 
-    // ─── Views ────────────────────────────────────────────────────────────────
     function totalDebt(address user) external view returns (uint256);
     function creditLimit(address user) external view returns (uint256);
     function frozen(address user) external view returns (bool);
@@ -33,9 +30,7 @@ interface ICreditManager {
     function creditScore(address user) external view returns (uint256);
     function riskTier(address user) external view returns (uint8);
 
-    // ─── Score breakdown — 8 components (6 positive + 2 penalty) ─────────────
-    // Renamed from scoreBreakdown to creditScoreBreakdown to match CreditManager.
-    // The original 6-value scoreBreakdown is kept below for backwards compat.
+
     function creditScoreBreakdown(address user)
         external
         view
@@ -50,7 +45,6 @@ interface ICreditManager {
             uint256 liquidationPenalty
         );
 
-    // ─── Legacy — kept so existing callers don't break ────────────────────────
     function scoreBreakdown(address user)
         external
         view

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
+import {ICreditScoreEngine} from "../interfaces/ICreditScoreEngine.sol";
 import {CreditOracle} from "../oracle/CreditOracle.sol";
 import {Errors} from "../libraries/Errors.sol";
 import {AaveAdapter} from "../adapters/AaveAdapter.sol";
@@ -12,17 +13,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LiquidationController} from "../fees/LiquidationController.sol";
 
-/// @title CreditRouter
-/// @notice Gateway for all borrow/repay/liquidate actions.
-///         Delegates credit accounting to CreditManager and per-protocol
-///         debt tracking so the Stylus score engine can compute cross-protocol
-///         scores correctly.
 contract CreditRouter {
     using SafeERC20 for IERC20;
 
-    // ─── State ────────────────────────────────────────────────────────────────
-
     ICreditManager public creditManager;
+    ICreditScoreEngine public scoreEngine;
     CreditOracle public immutable ORACLE;
     LiquidationController public immutable LIQUIDATION_CONTROLLER;
     InsurancePool public insurancePool;
@@ -32,8 +27,7 @@ contract CreditRouter {
 
     uint256 public closeFactorBps = 5000;
     mapping(address => bool) public isBorrower;
-
-    // ─── Events ───────────────────────────────────────────────────────────────
+    mapping(address => uint256) public protocolCount;
 
     event BorrowerWhitelisted(address indexed borrower, bool allowed);
     event CreditManagerSet(address manager);
@@ -41,10 +35,11 @@ contract CreditRouter {
     event CreditPoolSet(address pool);
     event CloseFactorUpdated(uint256 bps);
     event CreditDelegated(address indexed user, uint256 amount);
+    event ScoreEngineSet(address engine);
     event BorrowedFromAave(address indexed user, address asset, uint256 amount);
     event BorrowedFromCompound(address indexed user, uint256 amount);
     event RepaidToAave(address indexed user, address asset, uint256 amount);
-    event RepaidToCompound(address indexed user, uint256 amount);
+    event RepaidToCompound(address indexed user, address asset, uint256 amount);
     event Liquidated(
         address indexed user,
         address indexed liquidator,
@@ -54,8 +49,6 @@ contract CreditRouter {
         uint256 bonusPaid,
         uint256 bonusShortfall
     );
-
-    // ─── Constructor ──────────────────────────────────────────────────────────
 
     constructor(
         address _manager,
@@ -77,18 +70,40 @@ contract CreditRouter {
         OWNER = msg.sender;
     }
 
-    // ─── Modifiers ────────────────────────────────────────────────────────────
-
     modifier onlyOwner() {
         if (msg.sender != OWNER) revert Errors.NotAuthorized();
         _;
     }
 
-    // ─── Borrow ───────────────────────────────────────────────────────────────
+    function syncAaveCollateral(address aavePool, address user) external {
+        if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
+        (bool ok, bytes memory data) = aavePool.staticcall(
+            abi.encodeWithSignature("getUserAccountData(address)", user)
+        );
+        if (!ok) revert Errors.InvalidAmount();
+        (uint256 collateral,,,,,) = abi.decode(data, (uint256, uint256, uint256, uint256, uint256, uint256));
+        creditManager.setCollateralValue(user, collateral);
 
-    /// @notice Borrow from the Aave pool through its adapter.
-    ///         Records the borrow in CreditManager for both credit limit
-    ///         enforcement and per-protocol debt tracking (feeds Stylus score).
+        if (address(scoreEngine) != address(0)) {
+            scoreEngine.recordSupply(user, collateral);
+        }
+    }
+
+    function syncCompoundCollateral(address cToken, address user) external {
+        if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
+        (bool ok, bytes memory data) = cToken.staticcall(
+            abi.encodeWithSignature("getAccountSnapshot(address)", user)
+        );
+        if (!ok) revert Errors.InvalidAmount();
+        (, uint256 cTokenBal,, uint256 exchangeRate) = abi.decode(data, (uint256, uint256, uint256, uint256));
+        uint256 collateral = (cTokenBal * exchangeRate) / 1e18;
+        creditManager.setCollateralValue(user, collateral);
+
+        if (address(scoreEngine) != address(0)) {
+            scoreEngine.recordSupply(user, collateral);
+        }
+    }
+
     function borrowFromAave(
         address adapter,
         address asset,
@@ -101,12 +116,19 @@ contract CreditRouter {
         creditManager.onBorrow(msg.sender, amount);
         creditManager.recordAaveBorrow(msg.sender, amount);
 
-        AaveAdapter(adapter).borrow(asset, amount, msg.sender);
+        protocolCount[msg.sender] = _activeProtocolCount(msg.sender);
 
+        if (address(scoreEngine) != address(0)) {
+            uint256 limit = creditManager.creditLimit(msg.sender);
+            uint256 debt  = creditManager.totalDebt(msg.sender);
+            uint256 utilBps = limit > 0 ? (debt * 10_000) / limit : 0;
+            scoreEngine.recordBorrow(msg.sender, amount, protocolCount[msg.sender], utilBps);
+        }
+
+        AaveAdapter(adapter).borrow(asset, amount, msg.sender);
         emit BorrowedFromAave(msg.sender, asset, amount);
     }
 
-    /// @notice Borrow from the Compound pool through its adapter.
     function borrowFromCompound(
         address adapter,
         uint256 amount
@@ -118,15 +140,19 @@ contract CreditRouter {
         creditManager.onBorrow(msg.sender, amount);
         creditManager.recordCompoundBorrow(msg.sender, amount);
 
-        CompoundAdapter(adapter).borrow(amount);
+        protocolCount[msg.sender] = _activeProtocolCount(msg.sender);
 
+        if (address(scoreEngine) != address(0)) {
+            uint256 limit = creditManager.creditLimit(msg.sender);
+            uint256 debt  = creditManager.totalDebt(msg.sender);
+            uint256 utilBps = limit > 0 ? (debt * 10_000) / limit : 0;
+            scoreEngine.recordBorrow(msg.sender, amount, protocolCount[msg.sender], utilBps);
+        }
+
+        CompoundAdapter(adapter).borrow(amount);
         emit BorrowedFromCompound(msg.sender, amount);
     }
 
-    // ─── Repay ────────────────────────────────────────────────────────────────
-
-    /// @notice Repay an Aave borrow.
-    ///         Records the repayment so credit score and debt tracking update.
     function repayToAave(
         address adapter,
         address asset,
@@ -140,10 +166,13 @@ contract CreditRouter {
         creditManager.onRepay(msg.sender, amount);
         creditManager.recordAaveRepay(msg.sender, amount);
 
+        if (address(scoreEngine) != address(0)) {
+            scoreEngine.recordRepayment(msg.sender);
+        }
+
         emit RepaidToAave(msg.sender, asset, amount);
     }
 
-    /// @notice Repay a Compound borrow.
     function repayToCompound(
         address adapter,
         address asset,
@@ -157,10 +186,12 @@ contract CreditRouter {
         creditManager.onRepay(msg.sender, amount);
         creditManager.recordCompoundRepay(msg.sender, amount);
 
-        emit RepaidToCompound(msg.sender, amount);
-    }
+        if (address(scoreEngine) != address(0)) {
+            scoreEngine.recordRepayment(msg.sender);
+        }
 
-    // ─── Liquidation ──────────────────────────────────────────────────────────
+        emit RepaidToCompound(msg.sender, asset, amount);
+    }
 
     function liquidate(
         address user,
@@ -189,6 +220,10 @@ contract CreditRouter {
         IERC20(asset).safeTransferFrom(msg.sender, address(this), repayAmount);
         creditManager.onLiquidation(user, repayAmount);
 
+        if (address(scoreEngine) != address(0)) {
+            scoreEngine.recordLiquidation(user);
+        }
+
         uint256 bonusPaid = 0;
         if (bonus > 0) {
             bonusPaid = insurancePool.cover(bonus);
@@ -199,8 +234,6 @@ contract CreditRouter {
 
         emit Liquidated(user, msg.sender, asset, repayAmount, seize, bonusPaid, bonus - bonusPaid);
     }
-
-    // ─── Admin ────────────────────────────────────────────────────────────────
 
     function setCreditManager(address _cm) external onlyOwner {
         if (address(creditManager) != address(0)) revert Errors.AlreadySet();
@@ -243,26 +276,27 @@ contract CreditRouter {
         emit CloseFactorUpdated(bps);
     }
 
-    /// @notice Directly set the pool on CreditManager without going through setCreditPool.
-    ///         Used in deploy to wire creditPool into manager after both are deployed.
     function setManagerPool(address pool) external onlyOwner {
         if (pool == address(0)) revert Errors.ZeroAddress();
         creditManager.setPool(pool);
     }
 
-    /// @notice Set the Stylus CreditScoreEngine on CreditManager.
-    ///         Call this after deploying the Stylus contract.
     function setScoreEngine(address engine) external onlyOwner {
         if (engine == address(0)) revert Errors.ZeroAddress();
-        // CreditManager.setScoreEngine is onlyRouter — call through here
+        scoreEngine = ICreditScoreEngine(engine);
         (bool ok,) = address(creditManager).call(
             abi.encodeWithSignature("setScoreEngine(address)", engine)
         );
         require(ok, "setScoreEngine failed");
+        emit ScoreEngineSet(engine);
     }
 
-    /// @notice Unfreeze an account (admin action after review).
     function unfreezeAccount(address user) external onlyOwner {
         creditManager.unfreeze(user);
+    }
+
+    function _activeProtocolCount(address user) internal view returns (uint256 count) {
+        if (creditManager.aaveDebt(user) > 0) count++;
+        if (creditManager.compoundDebt(user) > 0) count++;
     }
 }
