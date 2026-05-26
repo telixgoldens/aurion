@@ -26,3 +26,7 @@ dist-ssr
 cache
 broadcast
 stylus/target/
+broadcast/
+cache/
+out/
+artifacts/
