@@ -1,12 +1,12 @@
 import { ethers } from "ethers";
-import CreditPoolArtifact from "../abi/CreditPool.json";
-import CreditRouterArtifact from "../abi/CreditRouter.json";
-import CreditManagerArtifact from "../abi/CreditManager.json";
-import InsurancePoolArtifact from "../abi/InsurancePool.json";
-import MockAavePoolArtifact from "../abi/MockAavePool.json";
-import MockCTokenArtifact from "../abi/MockCToken.json";
-import TokenFaucet from "../abi/TokenFaucet.json";
-import ERC20 from "../abi/ERC20.json";
+import CreditPoolArtifact     from "../abi/CreditPool.json";
+import CreditRouterArtifact   from "../abi/CreditRouter.json";
+import CreditManagerArtifact  from "../abi/CreditManager.json";
+import InsurancePoolArtifact  from "../abi/InsurancePool.json";
+import MockAavePoolArtifact   from "../abi/MockAavePool.json";
+import MockCTokenArtifact     from "../abi/MockCToken.json";
+import TokenFaucetArtifact    from "../abi/TokenFaucet.json";
+import ERC20                  from "../abi/ERC20.json";
 
 const CreditPool    = CreditPoolArtifact.abi;
 const CreditRouter  = CreditRouterArtifact.abi;
@@ -14,7 +14,7 @@ const CreditManager = CreditManagerArtifact.abi;
 const InsurancePool = InsurancePoolArtifact.abi;
 const MockAavePool  = MockAavePoolArtifact.abi;
 const MockCToken    = MockCTokenArtifact.abi;
-
+const TokenFaucet   = TokenFaucetArtifact.abi;
 
 const mustGetEnv = (key) => {
   const v = import.meta.env[key];
@@ -28,13 +28,15 @@ const getContract = (address, abi, providerOrSigner) => {
 };
 
 export const addresses = {
-  USDC: mustGetEnv("VITE_USDC"),
-  FAUCET: mustGetEnv("VITE_FAUCET"),
-  CREDIT_ROUTER: mustGetEnv("VITE_CREDIT_ROUTER"),
-  CREDIT_MANAGER: mustGetEnv("VITE_CREDIT_MANAGER"),
-  INSURANCE_POOL: mustGetEnv("VITE_INSURANCE_POOL"),
-  MOCK_AAVE_POOL: mustGetEnv("VITE_MOCK_AAVE_POOL"),
-  MOCK_CTOKEN: mustGetEnv("VITE_MOCK_CTOKEN"),
+  USDC:             mustGetEnv("VITE_USDC"),
+  FAUCET:           mustGetEnv("VITE_FAUCET"),
+  CREDIT_ROUTER:    mustGetEnv("VITE_CREDIT_ROUTER"),
+  CREDIT_MANAGER:   mustGetEnv("VITE_CREDIT_MANAGER"),
+  INSURANCE_POOL:   mustGetEnv("VITE_INSURANCE_POOL"),
+  MOCK_AAVE_POOL:   mustGetEnv("VITE_MOCK_AAVE_POOL"),
+  MOCK_CTOKEN:      mustGetEnv("VITE_MOCK_CTOKEN"),
+  AAVE_ADAPTER:     mustGetEnv("VITE_AAVE_ADAPTER"),
+  COMPOUND_ADAPTER: mustGetEnv("VITE_COMPOUND_ADAPTER"),
 };
 
 export const getCreditPool = async (providerOrSigner) => {
@@ -43,29 +45,14 @@ export const getCreditPool = async (providerOrSigner) => {
   return getContract(poolAddress, CreditPool, providerOrSigner);
 };
 
-export const getCreditRouter = (providerOrSigner) =>
-  getContract(addresses.CREDIT_ROUTER, CreditRouter, providerOrSigner);
-
-export const getCreditManager = (providerOrSigner) =>
-  getContract(addresses.CREDIT_MANAGER, CreditManager, providerOrSigner);
-
-export const getInsurancePool = (providerOrSigner) =>
-  getContract(addresses.INSURANCE_POOL, InsurancePool, providerOrSigner);
-
-export const getMockAavePool = (providerOrSigner) =>
-  getContract(addresses.MOCK_AAVE_POOL, MockAavePool, providerOrSigner);
-
-export const getMockCompoundPool = (providerOrSigner) =>
-  getContract(addresses.MOCK_CTOKEN, MockCToken, providerOrSigner);
-
-export const getUSDC = (providerOrSigner) =>
-  getContract(addresses.USDC, ERC20, providerOrSigner);
-
-export const getFaucet = (providerOrSigner) =>
-  getContract(addresses.FAUCET, TokenFaucet, providerOrSigner);
-
-export const getToken = (address, providerOrSigner) =>
-  getContract(address, ERC20, providerOrSigner);
+export const getCreditRouter     = (p) => getContract(addresses.CREDIT_ROUTER,    CreditRouter,  p);
+export const getCreditManager    = (p) => getContract(addresses.CREDIT_MANAGER,   CreditManager, p);
+export const getInsurancePool    = (p) => getContract(addresses.INSURANCE_POOL,   InsurancePool, p);
+export const getMockAavePool     = (p) => getContract(addresses.MOCK_AAVE_POOL,   MockAavePool,  p);
+export const getMockCompoundPool = (p) => getContract(addresses.MOCK_CTOKEN,      MockCToken,    p);
+export const getUSDC             = (p) => getContract(addresses.USDC,             ERC20,         p);
+export const getFaucet           = (p) => getContract(addresses.FAUCET,           TokenFaucet,   p);
+export const getToken            = (address, p) => getContract(address,           ERC20,         p);
 
 export const readUSDCBalance = async (provider, user) => {
   const usdc = getUSDC(provider);

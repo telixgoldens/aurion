@@ -7,12 +7,15 @@ import {
   Shield,
   Activity,
   RefreshCw,
+  Zap,
 } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard";
 import { useRouterActivity } from "../hooks/useRouterActivity";
+import { useScoreBreakdown } from "../hooks/useScoreBreakdown";
 import { formatCurrency, formatAddress } from "../utils/format";
 
 const CREDIT_ROUTER_ADDRESS = import.meta.env.VITE_CREDIT_ROUTER;
+const CREDIT_MANAGER_ADDRESS = import.meta.env.VITE_CREDIT_MANAGER;
 
 function getTierMeta(tier) {
   switch (tier) {
@@ -43,6 +46,28 @@ function getTierMeta(tier) {
   }
 }
 
+function BreakdownRow({ label, value, max, positive = true }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span className={positive ? "text-[#F5DEB3]/60" : "text-red-400/70"}>
+          {positive ? "+" : "−"}{label}
+        </span>
+        <span className={positive ? "text-white" : "text-red-400"}>
+          {positive ? "+" : "-"}{value}
+        </span>
+      </div>
+      <div className="w-full h-1.5 bg-[#0B1437] rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full ${positive ? "bg-[#D4AF37]" : "bg-red-500"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const { data, refetch } = useDashboard();
   const {
@@ -50,6 +75,7 @@ function Dashboard() {
     loading: activityLoading,
     refetch: refetchActivity,
   } = useRouterActivity(CREDIT_ROUTER_ADDRESS);
+  const { breakdown, loading: breakdownLoading } = useScoreBreakdown(CREDIT_MANAGER_ADDRESS);
 
   const limit = Number(data.limit || 0);
   const debt = Number(data.debt || 0);
@@ -80,16 +106,8 @@ function Dashboard() {
 
   const creditOverview = [
     { label: "Credit Limit", value: formatCurrency(limit), icon: DollarSign },
-    {
-      label: "Outstanding Debt",
-      value: formatCurrency(debt),
-      icon: TrendingUp,
-    },
-    {
-      label: "Available Credit",
-      value: formatCurrency(available),
-      icon: ArrowUpRight,
-    },
+    { label: "Outstanding Debt", value: formatCurrency(debt), icon: TrendingUp },
+    { label: "Available Credit", value: formatCurrency(available), icon: ArrowUpRight },
   ];
 
   const refreshAll = () => {
@@ -115,10 +133,7 @@ function Dashboard() {
           {creditOverview.map((item) => {
             const Icon = item.icon;
             return (
-              <Card
-                key={item.label}
-                className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5"
-              >
+              <Card key={item.label} className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div className="p-2 bg-[#D4AF37]/10 rounded-lg">
                     <Icon className="w-5 h-5 text-[#D4AF37]" />
@@ -139,9 +154,7 @@ function Dashboard() {
           <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm text-[#F5DEB3]/70">Credit Utilization</h3>
-              <span className="text-xl text-white">
-                {utilization.toFixed(1)}%
-              </span>
+              <span className="text-xl text-white">{utilization.toFixed(1)}%</span>
             </div>
             <div className="w-full h-2 bg-[#0B1437] rounded-full overflow-hidden">
               <div
@@ -156,9 +169,7 @@ function Dashboard() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm text-[#F5DEB3]/70">Health Factor</h3>
               <div className="flex items-center gap-2">
-                <AlertTriangle
-                  className={`w-4 h-4 ${isHealthy ? "text-emerald-400" : "text-[#D4AF37]"}`}
-                />
+                <AlertTriangle className={`w-4 h-4 ${isHealthy ? "text-emerald-400" : "text-[#D4AF37]"}`} />
                 <span className="text-xl text-white">
                   {hfDisplay > 1_000_000 ? "∞" : hfDisplay.toFixed(2)}
                 </span>
@@ -172,9 +183,7 @@ function Dashboard() {
             </div>
             <p className="text-xs text-[#F5DEB3]/50 mt-2">
               Liquidation when HF {"<"} 1.00 •{" "}
-              <span
-                className={isHealthy ? "text-emerald-400" : "text-[#D4AF37]"}
-              >
+              <span className={isHealthy ? "text-emerald-400" : "text-[#D4AF37]"}>
                 {isHealthy ? "Healthy" : "At risk"}
               </span>
             </p>
@@ -184,7 +193,6 @@ function Dashboard() {
 
       <section>
         <h2 className="text-lg text-white/90 mb-4">Credit Scoring</h2>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
             <div className="flex items-center justify-between mb-2">
@@ -206,33 +214,20 @@ function Dashboard() {
 
             <div className="grid grid-cols-2 gap-3 mt-4">
               <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
-                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
-                  Borrow Count
-                </div>
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">Borrow Count</div>
                 <div className="text-white text-lg mt-1">{data.borrows}</div>
               </div>
-
               <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
-                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
-                  Repay Count
-                </div>
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">Repay Count</div>
                 <div className="text-white text-lg mt-1">{data.repays}</div>
               </div>
-
               <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
-                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
-                  Liquidations
-                </div>
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">Liquidations</div>
                 <div className="text-white text-lg mt-1">{data.liquidations}</div>
               </div>
-
               <div className="rounded-lg bg-[#0B1437] p-3 border border-[#D4AF37]/10">
-                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">
-                  Status
-                </div>
-                <div
-                  className={`text-lg mt-1 ${data.isFrozen ? "text-red-400" : "text-emerald-400"}`}
-                >
+                <div className="text-[10px] text-[#F5DEB3]/50 uppercase tracking-wide">Status</div>
+                <div className={`text-lg mt-1 ${data.isFrozen ? "text-red-400" : "text-emerald-400"}`}>
                   {data.isFrozen ? "Frozen" : "Active"}
                 </div>
               </div>
@@ -240,77 +235,88 @@ function Dashboard() {
           </Card>
 
           <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
-            <h3 className="text-sm text-[#F5DEB3]/70 mb-3">Score Benefits</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-4 h-4 text-[#D4AF37]" />
+              <h3 className="text-sm text-[#F5DEB3]/70">
+                Score Breakdown
+                <span className="ml-2 text-[10px] text-[#a78bfa] bg-[#1a0e2e] px-1.5 py-0.5 rounded">
+                  Arbitrum Stylus
+                </span>
+              </h3>
+            </div>
 
+            {breakdownLoading ? (
+              <div className="text-xs text-[#F5DEB3]/40 py-4">Loading breakdown…</div>
+            ) : breakdown ? (
+              <div className="space-y-3">
+                <BreakdownRow label="Account Age"       value={breakdown.ageScore}          max={150} />
+                <BreakdownRow label="Health Factor"     value={breakdown.healthScore}        max={250} />
+                <BreakdownRow label="Repayment History" value={breakdown.repayScore}         max={200} />
+                <BreakdownRow label="Delegated Credit"  value={breakdown.delegatedScore}     max={100} />
+                <BreakdownRow label="Protocol Diversity" value={breakdown.diversityScore}    max={150} />
+                <div className="border-t border-[#D4AF37]/10 pt-2 space-y-3">
+                  <BreakdownRow label="Volatility"      value={breakdown.volatilityPenalty}  max={100} positive={false} />
+                  <BreakdownRow label="Utilization"     value={breakdown.utilizationPenalty} max={150} positive={false} />
+                  <BreakdownRow label="Liquidations"    value={breakdown.liquidationPenalty} max={300} positive={false} />
+                </div>
+                <div className="flex justify-between text-xs pt-2 border-t border-[#D4AF37]/10">
+                  <span className="text-[#F5DEB3]/50">Net Score</span>
+                  <span className="text-white font-bold font-mono">{score} / 1000</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-[#F5DEB3]/40 py-4">
+                Interact with Aave or Compound pools to build your score.
+              </div>
+            )}
+          </Card>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg text-white/90 mb-4">Score Benefits</h2>
+        <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ul className="space-y-2 text-xs text-[#F5DEB3]/60">
               <li className="flex items-center justify-between">
                 <span>Lower fees</span>
-                <span className="text-white">
-                  {tier === "Conservative"
-                    ? "Yes"
-                    : tier === "Moderate"
-                      ? "Partial"
-                      : "No"}
-                </span>
+                <span className="text-white">{tier === "Conservative" ? "Yes" : tier === "Moderate" ? "Partial" : "No"}</span>
               </li>
-
               <li className="flex items-center justify-between">
                 <span>Higher borrow limits</span>
-                <span className="text-white">
-                  {tier === "Conservative"
-                    ? "High"
-                    : tier === "Moderate"
-                      ? "Medium"
-                      : "Low"}
-                </span>
+                <span className="text-white">{tier === "Conservative" ? "High" : tier === "Moderate" ? "Medium" : "Low"}</span>
               </li>
-
               <li className="flex items-center justify-between">
                 <span>Delegated allocation</span>
-                <span className="text-white">
-                  {tier === "Conservative"
-                    ? "Priority"
-                    : tier === "Moderate"
-                      ? "Normal"
-                      : "Limited"}
-                </span>
+                <span className="text-white">{tier === "Conservative" ? "Priority" : tier === "Moderate" ? "Normal" : "Limited"}</span>
               </li>
-
               <li className="flex items-center justify-between">
                 <span>Early access</span>
-                <span className="text-white">
-                  {tier === "Conservative" ? "Enabled" : "—"}
-                </span>
+                <span className="text-white">{tier === "Conservative" ? "Enabled" : "—"}</span>
               </li>
             </ul>
 
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               <div className="flex items-start gap-3 p-3 rounded-lg bg-[#0B1437] border border-[#D4AF37]/10">
                 <Shield className="w-4 h-4 text-[#D4AF37] mt-0.5" />
                 <div>
                   <div className="text-xs text-white">Collateral Contribution</div>
-                  <div className="text-sm text-[#F5DEB3]/70">
-                    {formatCurrency(collateralValue)}
-                  </div>
+                  <div className="text-sm text-[#F5DEB3]/70">{formatCurrency(collateralValue)}</div>
                 </div>
               </div>
-
               <div className="flex items-start gap-3 p-3 rounded-lg bg-[#0B1437] border border-[#D4AF37]/10">
                 <Activity className="w-4 h-4 text-[#D4AF37] mt-0.5" />
                 <div>
                   <div className="text-xs text-white">Delegated Credit</div>
-                  <div className="text-sm text-[#F5DEB3]/70">
-                    {formatCurrency(delegatedCredit)}
-                  </div>
+                  <div className="text-sm text-[#F5DEB3]/70">{formatCurrency(delegatedCredit)}</div>
                 </div>
               </div>
             </div>
-
-            <p className="mt-3 text-[10px] text-[#F5DEB3]/40">
-              Live onchain scoring from CreditManager.
-            </p>
-          </Card>
-        </div>
+          </div>
+          <p className="mt-3 text-[10px] text-[#F5DEB3]/40">
+            Live onchain scoring from CreditManager via Arbitrum Stylus engine.
+          </p>
+        </Card>
       </section>
 
       <section>
@@ -318,17 +324,11 @@ function Dashboard() {
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20">
           <div className="divide-y divide-[#D4AF37]/10">
             {activityLoading && (
-              <div className="p-4 text-sm text-[#F5DEB3]/60">
-                Loading onchain activity…
-              </div>
+              <div className="p-4 text-sm text-[#F5DEB3]/60">Loading onchain activity…</div>
             )}
-
             {!activityLoading && activity.length === 0 && (
-              <div className="p-4 text-sm text-[#F5DEB3]/60">
-                No onchain activity found (router logs).
-              </div>
+              <div className="p-4 text-sm text-[#F5DEB3]/60">No onchain activity found (router logs).</div>
             )}
-
             {!activityLoading &&
               activity.map((a) => (
                 <div
@@ -341,24 +341,18 @@ function Dashboard() {
                     </div>
                     <div>
                       <div className="text-sm text-white">
-                        Liquidated{" "}
-                        <span className="text-xs text-[#F5DEB3]/60">
-                          ({a.role})
-                        </span>
+                        Liquidated <span className="text-xs text-[#F5DEB3]/60">({a.role})</span>
                       </div>
                       <div className="text-xs text-[#F5DEB3]/50">
                         {a.timestamp} • Asset {formatAddress(a.asset)}
                       </div>
                     </div>
                   </div>
-
                   <div className="text-right">
                     <div className="text-sm text-white">
                       Repay {a.repayAmount} • Seize {a.seizeAmount}
                     </div>
-                    <div className="text-xs text-[#F5DEB3]/50">
-                      {formatAddress(a.txHash)}
-                    </div>
+                    <div className="text-xs text-[#F5DEB3]/50">{formatAddress(a.txHash)}</div>
                   </div>
                 </div>
               ))}
