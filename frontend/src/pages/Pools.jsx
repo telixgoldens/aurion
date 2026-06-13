@@ -258,6 +258,7 @@ function Pools({ onNavigate }) {
         pool.totalDeposits(),
         pool.availableLiquidity(),
         pool.totalDelegated(),
+        pool.depositOf(userAddress),    // NEW
       ]);
 
     const totalDepositsNum  = Number(ethers.formatUnits(totalDeposits      ?? 0n, 6));
