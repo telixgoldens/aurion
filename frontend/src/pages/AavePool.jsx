@@ -5,7 +5,7 @@ import { useMarketPool } from "../hooks/useMarketPool";
 import { getMockAavePool } from "../lib/contracts";
 
 function AavePool({ onNavigate }) {
-  const { stats, loading, deposit, withdraw, borrow, repay } = useMarketPool(getMockAavePool);
+  const { stats, loading, deposit, withdraw, borrow, repay } = useMarketPool(getMockAavePool, true);
   const [amount, setAmount] = useState("");
   const [tab, setTab] = useState("deposit");
 

@@ -5,7 +5,7 @@ import { useMarketPool } from "../hooks/useMarketPool";
 import { getMockCompoundPool } from "../lib/contracts";
 
 function CompoundPool({ onNavigate }) {
-  const { stats, loading, deposit, withdraw, borrow, repay } = useMarketPool(getMockCompoundPool);
+  const { stats, loading, deposit, withdraw, borrow, repay } = useMarketPool(getMockCompoundPool, false);
   const [amount, setAmount] = useState("");
   const [tab, setTab] = useState("deposit");
 

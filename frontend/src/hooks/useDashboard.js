@@ -18,6 +18,8 @@ export function useDashboard() {
     riskTier: "Restricted",
     riskTierValue: 0,
     collateralValue: 0,
+    aaveCollateral: 0,       // NEW
+    compoundCollateral: 0,   // NEW
     delegatedCredit: 0,
     borrows: 0,
     repays: 0,
@@ -30,7 +32,7 @@ export function useDashboard() {
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const manager = getCreditManager(provider);
+      const manager  = getCreditManager(provider);
 
       const [
         debt,
@@ -39,6 +41,8 @@ export function useDashboard() {
         score,
         tier,
         metrics,
+        aaveColl,       // NEW
+        compoundColl,   // NEW
       ] = await Promise.all([
         manager.totalDebt(address),
         manager.creditLimit(address),
@@ -46,37 +50,37 @@ export function useDashboard() {
         manager.creditScore(address),
         manager.riskTier(address),
         manager.userMetrics(address),
+        manager.aaveCollateral(address),     // NEW — needs CreditManager redeploy
+        manager.compoundCollateral(address), // NEW — needs CreditManager redeploy
       ]);
 
       const available = limit > debt ? limit - debt : 0n;
 
       setData({
-        debt: fromUnits(debt, 6),
-        limit: fromUnits(limit, 6),
-        available: fromUnits(available, 6),
-        healthFactor:
-          health === ethers.MaxUint256 ? 999999999 : fromUnits(health, 18),
-
-        creditScore: Number(score),
-        riskTier: tierLabels[Number(tier)] ?? "Restricted",
-        riskTierValue: Number(tier),
-
-        collateralValue: fromUnits(metrics.collateral, 6),
-        delegatedCredit: fromUnits(metrics.delegated, 6),
-
-        borrows: Number(metrics.borrows),
-        repays: Number(metrics.repays),
+        debt:         fromUnits(debt, 6),
+        limit:        fromUnits(limit, 6),
+        available:    fromUnits(available, 6),
+        healthFactor: health === ethers.MaxUint256
+                        ? 999999999
+                        : fromUnits(health, 18),
+        creditScore:    Number(score),
+        riskTier:       tierLabels[Number(tier)] ?? "Restricted",
+        riskTierValue:  Number(tier),
+        collateralValue:   fromUnits(metrics.collateral, 6), // total (aave + compound)
+        aaveCollateral:    fromUnits(aaveColl, 6),           // NEW
+        compoundCollateral: fromUnits(compoundColl, 6),      // NEW
+        delegatedCredit:   fromUnits(metrics.delegated, 6),
+        borrows:      Number(metrics.borrows),
+        repays:       Number(metrics.repays),
         liquidations: Number(metrics.liquidations),
-        isFrozen: Boolean(metrics.isFrozen),
+        isFrozen:     Boolean(metrics.isFrozen),
       });
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     }
   }, [address, isConnected]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   return { data, refetch: fetchData };
 }

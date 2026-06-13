@@ -1,22 +1,42 @@
 import { useCallback, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { getBrowserProvider, getSigner } from "../lib/eth";
-import { getUSDC, getCreditRouter, addresses } from "../lib/contracts";
+import { getUSDC, getCreditRouter, getCreditManager, addresses } from "../lib/contracts";
+
+// Maps 4-byte selectors to human-readable messages.
+// Run: cast sig "ErrorName()" to get the selector for any error in Errors.sol
+const ERROR_SELECTORS = {
+  "0x8ac4bc73": "InsufficientCredit — your collateral hasn't been synced to CreditManager yet. Try depositing first, then clicking 'Sync Collateral'.",
+  "0x8baa579f": "NotAuthorized — CreditRouter address mismatch in CreditManager. Redeploy and update .env.",
+  "0x82b42900": "NotAuthorized (variant) — same as above.",
+  "0xf4d678b8": "InsufficientBalance",
+  // Add more as you discover them from cast sig output
+};
+
+function decodeError(e) {
+  // ethers v6 bubbles the raw revert data in e.data
+  const raw = e?.data ?? e?.error?.data ?? "";
+  const selector = typeof raw === "string" ? raw.slice(0, 10) : "";
+  if (selector && ERROR_SELECTORS[selector]) return ERROR_SELECTORS[selector];
+  return e?.shortMessage ?? e?.reason ?? e?.message ?? "Unknown error";
+}
 
 async function syncCollateral(isAave, pool, signer) {
   try {
     const router = getCreditRouter(signer);
     const user = await signer.getAddress();
     const poolAddress = await pool.getAddress();
-    let tx;
-    if (isAave) {
-      tx = await router.syncAaveCollateral(poolAddress, user);
-    } else {
-      tx = await router.syncCompoundCollateral(poolAddress, user);
-    }
+
+    const tx = isAave
+      ? await router.syncAaveCollateral(poolAddress, user)
+      : await router.syncCompoundCollateral(poolAddress, user);
+
     await tx.wait();
+    return { ok: true };
   } catch (e) {
-    console.warn("syncCollateral failed (non-fatal):", e?.shortMessage || e?.message);
+    const msg = decodeError(e);
+    console.warn("syncCollateral failed:", msg);
+    return { ok: false, msg };
   }
 }
 
@@ -28,162 +48,82 @@ const defaultStats = {
   userDeposit: 0,
   userDebt: 0,
   usdcBalance: 0,
+  collateral: 0,      // what CreditManager actually sees
+  creditLimit: 0,     // collateral + delegated
   address: "",
-  supplyApy: null,
-  borrowApy: null,
-  healthFactor: null,
-  cTokenBalance: null,
-  exchangeRate: null,
-  collateralFactor: null,
 };
 
-export function useMarketPool(getPoolContract) {
+export function useMarketPool(getPoolContract, isAave) {
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState(defaultStats);
-
-  // Detect whether this is an Aave or Compound pool by checking for ASSET()
-  // getMockAavePool returns a contract with ASSET(); MockCToken has UNDERLYING()
-  const getPoolMeta = async (provider) => {
-    const pool = getPoolContract(provider);
-    let isAave = false;
-    try {
-      await pool.ASSET();
-      isAave = true;
-    } catch {
-      isAave = false;
-    }
-    return { pool, isAave };
-  };
+  const [stats, setStats]     = useState(defaultStats);
+  const [error, setError]     = useState(null);
 
   const fetchData = useCallback(async () => {
     if (!window.ethereum) return;
+    try {
+      const provider    = await getBrowserProvider();
+      const signer      = await provider.getSigner();
+      const user        = await signer.getAddress();
+      const pool        = getPoolContract(provider);
+      const usdc        = getUSDC(provider);
+      const manager     = getCreditManager(provider);
+      const poolAddress = await pool.getAddress();
 
-    const provider = await getBrowserProvider();
-    const signer   = await provider.getSigner();
-    const user     = await signer.getAddress();
-
-    const { pool } = await getPoolMeta(provider);
-    const usdc     = getUSDC(provider);
-
-    const safeCall = async (fn) => {
-      try { return await fn(); } catch { return null; }
-    };
-
-    const [totalDeposits, totalBorrows, availableLiquidity, balance] =
-      await Promise.all([
+      const [
+        totalDeposits, totalBorrows, availLiq, utilBps,
+        userDep, userDbt, balance, collateral, creditLimit,
+      ] = await Promise.all([
         pool.totalDeposits(),
         pool.totalBorrows(),
         pool.availableLiquidity(),
+        pool.utilizationBps().catch(() => 0n),
+        pool.userDeposit(user),
+        pool.userDebt(user),
         usdc.balanceOf(user),
+        manager.collateralValue(user),   // what CreditManager sees
+        manager.creditLimit(user),        // collateral + delegated
       ]);
 
-    const [
-      utilizationBps,
-      userDeposit,
-      userDebt,
-      rates,
-      accountData,
-      snapshot,
-      exchangeRate,
-      cfMantissa,
-    ] = await Promise.all([
-      safeCall(() => pool.utilizationBps()),
-      safeCall(() => pool.userDeposit(user)),
-      safeCall(() => pool.userDebt(user)),
-      safeCall(() => pool.getRatesFormatted()),
-      safeCall(() => pool.getUserAccountData(user)),
-      safeCall(() => pool.getAccountSnapshot(user)),
-      safeCall(() => pool.exchangeRateStored()),
-      safeCall(() => pool.collateralFactorMantissa()),
-    ]);
-
-    let supplyApy  = null;
-    let borrowApy  = null;
-    let utilization = utilizationBps ? Number(utilizationBps) / 100 : 0;
-
-    if (rates) {
-      borrowApy  = Number(ethers.formatUnits(rates[0], 18)) * 100;
-      supplyApy  = Number(ethers.formatUnits(rates[1], 18)) * 100;
-      if (!utilizationBps) utilization = Number(rates[2]) / 100;
+      setStats({
+        totalDeposits:      Number(ethers.formatUnits(totalDeposits, 6)),
+        totalBorrows:       Number(ethers.formatUnits(totalBorrows, 6)),
+        availableLiquidity: Number(ethers.formatUnits(availLiq, 6)),
+        utilization:        Number(utilBps) / 100,
+        userDeposit:        Number(ethers.formatUnits(userDep, 6)),
+        userDebt:           Number(ethers.formatUnits(userDbt, 6)),
+        usdcBalance:        Number(ethers.formatUnits(balance, 6)),
+        collateral:         Number(ethers.formatUnits(collateral, 6)),
+        creditLimit:        Number(ethers.formatUnits(creditLimit, 6)),
+        address:            poolAddress,
+      });
+    } catch (e) {
+      console.error("fetchData failed:", decodeError(e));
     }
-
-    let aaveSupplied = null, aaveDebt = null, aaveAvailable = null, healthFactor = null;
-    if (accountData) {
-      aaveSupplied  = Number(ethers.formatUnits(accountData[0], 6));
-      aaveDebt      = Number(ethers.formatUnits(accountData[1], 6));
-      aaveAvailable = Number(ethers.formatUnits(accountData[2], 6));
-      const hfRaw   = accountData[5];
-      healthFactor  = hfRaw === ethers.MaxUint256
-        ? Infinity
-        : Number(ethers.formatUnits(hfRaw, 18));
-    }
-
-    let cTokenBalance = null, compDebt = null, compSupplied = null;
-    let compAvailable = null, exRate = null, cf = null;
-    if (snapshot) {
-      cTokenBalance = Number(ethers.formatUnits(snapshot[1], 8));
-      compDebt      = Number(ethers.formatUnits(snapshot[2], 6));
-      exRate        = Number(ethers.formatUnits(snapshot[3], 18));
-      compSupplied  = cTokenBalance * exRate;
-      if (cfMantissa) {
-        cf = Number(ethers.formatUnits(cfMantissa, 18)) * 100;
-        const maxBorrow = compSupplied * (cf / 100);
-        compAvailable   = Math.max(0, maxBorrow - compDebt);
-        healthFactor    = compDebt === 0
-          ? Infinity
-          : (compSupplied * (cf / 100)) / compDebt;
-      }
-    }
-    if (exchangeRate && !exRate) {
-      exRate = Number(ethers.formatUnits(exchangeRate, 18));
-    }
-
-    const fmt6 = (v) => (v != null ? Number(ethers.formatUnits(v, 6)) : 0);
-    const poolAddress = await pool.getAddress();
-
-    setStats({
-      totalDeposits:      Number(ethers.formatUnits(totalDeposits, 6)),
-      totalBorrows:       Number(ethers.formatUnits(totalBorrows, 6)),
-      availableLiquidity: aaveAvailable ?? compAvailable ?? Number(ethers.formatUnits(availableLiquidity, 6)),
-      utilization,
-      userDeposit:        aaveSupplied ?? compSupplied ?? fmt6(userDeposit),
-      userDebt:           aaveDebt     ?? compDebt     ?? fmt6(userDebt),
-      usdcBalance:        Number(ethers.formatUnits(balance, 6)),
-      address:            poolAddress,
-      supplyApy,
-      borrowApy,
-      healthFactor,
-      cTokenBalance,
-      exchangeRate:       exRate,
-      collateralFactor:   cf ? cf.toFixed(0) : null,
-    });
-  }, [getPoolContract]);
+  }, [getPoolContract, isAave]);
 
   const deposit = async (amount) => {
     setLoading(true);
+    setError(null);
     try {
-      const signer          = await getSigner();
-      const provider        = await getBrowserProvider();
-      const { pool, isAave } = await getPoolMeta(provider);
-      const poolWithSigner  = getPoolContract(signer);
-      const usdc            = getUSDC(signer);
-      const poolAddress     = await poolWithSigner.getAddress();
-      const amountWei       = ethers.parseUnits(amount.toString(), 6);
+      const signer      = await getSigner();
+      const pool        = getPoolContract(signer);
+      const usdc        = getUSDC(signer);
+      const poolAddress = await pool.getAddress();
+      const amountWei   = ethers.parseUnits(amount.toString(), 6);
 
       const approveTx = await usdc.approve(poolAddress, amountWei);
       await approveTx.wait();
 
-      let tx;
-      if (isAave) {
-        const user  = await signer.getAddress();
-        const asset = await poolWithSigner.ASSET();
-        tx = await poolWithSigner.supply(asset, amountWei, user, 0);
-      } else {
-        tx = await poolWithSigner.mint(amountWei);
-      }
+      const tx = await pool.deposit(amountWei);
       await tx.wait();
-      await syncCollateral(isAave, poolWithSigner, signer);
+
+      const { ok, msg } = await syncCollateral(isAave, pool, signer);
+      if (!ok) {
+        setError(`Deposit succeeded but collateral sync failed: ${msg}`);
+      }
       await fetchData();
+    } catch (e) {
+      setError(decodeError(e));
     } finally {
       setLoading(false);
     }
@@ -191,24 +131,19 @@ export function useMarketPool(getPoolContract) {
 
   const withdraw = async (amount) => {
     setLoading(true);
+    setError(null);
     try {
-      const signer           = await getSigner();
-      const provider         = await getBrowserProvider();
-      const { pool, isAave } = await getPoolMeta(provider);
-      const poolWithSigner   = getPoolContract(signer);
-      const amountWei        = ethers.parseUnits(amount.toString(), 6);
+      const signer    = await getSigner();
+      const pool      = getPoolContract(signer);
+      const amountWei = ethers.parseUnits(amount.toString(), 6);
 
-      let tx;
-      if (isAave) {
-        const user  = await signer.getAddress();
-        const asset = await poolWithSigner.ASSET();
-        tx = await poolWithSigner.withdraw(asset, amountWei, user);
-      } else {
-        tx = await poolWithSigner.redeemUnderlying(amountWei);
-      }
+      const tx = await pool.withdraw(amountWei);
       await tx.wait();
-      await syncCollateral(isAave, poolWithSigner, signer);
+
+      await syncCollateral(isAave, pool, signer);
       await fetchData();
+    } catch (e) {
+      setError(decodeError(e));
     } finally {
       setLoading(false);
     }
@@ -216,35 +151,31 @@ export function useMarketPool(getPoolContract) {
 
   const borrow = async (amount) => {
     setLoading(true);
+    setError(null);
     try {
-      const signer           = await getSigner();
-      const provider         = await getBrowserProvider();
-      const { pool, isAave } = await getPoolMeta(provider);
-      const poolWithSigner   = getPoolContract(signer);
-      const amountWei        = ethers.parseUnits(amount.toString(), 6);
+      const signer    = await getSigner();
+      const pool      = getPoolContract(signer);
+      const router    = getCreditRouter(signer);
+      const amountWei = ethers.parseUnits(amount.toString(), 6);
 
-      let tx;
-      if (isAave) {
-        // Aave borrow MUST go through CreditRouter so credit limit is validated
-        // and Stylus recordBorrow is called
-        const router    = getCreditRouter(signer);
-        const user      = await signer.getAddress();
-        const asset     = await poolWithSigner.ASSET();
-        const poolAddr  = await poolWithSigner.getAddress();
-
-        // Find the AaveAdapter address from the router's known adapter
-        // Router.borrowFromAave(adapter, asset, amount)
-        const aaveAdapterAddr = addresses.AAVE_ADAPTER;
-        tx = await router.borrowFromAave(aaveAdapterAddr, asset, amountWei);
-      } else {
-        // Compound borrow through CreditRouter
-        const router          = getCreditRouter(signer);
-        const compAdapterAddr = addresses.COMPOUND_ADAPTER;
-        tx = await router.borrowFromCompound(compAdapterAddr, amountWei);
+      // Pre-flight: if collateral is 0, surface a clear error before sending tx
+      if (stats.collateral === 0) {
+        throw new Error("No collateral recorded in CreditManager. Deposit first, then sync.");
       }
+      if (stats.creditLimit === 0) {
+        throw new Error("Credit limit is 0. Collateral sync may have failed.");
+      }
+
+      const tx = isAave
+        ? await router.borrowFromAave(addresses.AAVE_ADAPTER, addresses.USDC, amountWei)
+        : await router.borrowFromCompound(addresses.COMPOUND_ADAPTER, amountWei);
+
       await tx.wait();
-      await syncCollateral(isAave, poolWithSigner, signer);
+      await syncCollateral(isAave, pool, signer);
       await fetchData();
+    } catch (e) {
+      setError(decodeError(e));
+      throw e;
     } finally {
       setLoading(false);
     }
@@ -252,60 +183,59 @@ export function useMarketPool(getPoolContract) {
 
   const repay = async (amount) => {
     setLoading(true);
+    setError(null);
     try {
-      const signer           = await getSigner();
-      const provider         = await getBrowserProvider();
-      const { pool, isAave } = await getPoolMeta(provider);
-      const poolWithSigner   = getPoolContract(signer);
-      const usdc             = getUSDC(signer);
-      const amountWei        = ethers.parseUnits(amount.toString(), 6);
+        const signer    = await getSigner();
+        const pool      = getPoolContract(signer);
+        const usdc      = getUSDC(signer);
+        const router    = getCreditRouter(signer);
+        const amountWei = ethers.parseUnits(amount.toString(), 6);
 
-      if (isAave) {
-        // Repay through CreditRouter so Stylus recordRepayment is called
-        const router          = getCreditRouter(signer);
-        const asset           = await poolWithSigner.ASSET();
-        const aaveAdapterAddr = addresses.AAVE_ADAPTER;
-
-        const approveTx = await usdc.approve(aaveAdapterAddr, amountWei);
+        // ✅ Approve CREDIT_ROUTER — it's the contract calling safeTransferFrom
+        const approveTx = await usdc.approve(addresses.CREDIT_ROUTER, amountWei);
         await approveTx.wait();
 
-        tx = await router.repayToAave(aaveAdapterAddr, asset, amountWei);
-      } else {
-        const router          = getCreditRouter(signer);
-        const compAdapterAddr = addresses.COMPOUND_ADAPTER;
-        const poolAddress     = await poolWithSigner.getAddress();
+        let tx;
+        if (isAave) {
+            tx = await router.repayToAave(
+                addresses.AAVE_ADAPTER,
+                addresses.USDC,
+                amountWei
+            );
+        } else {
+            tx = await router.repayToCompound(
+                addresses.COMPOUND_ADAPTER,
+                addresses.USDC,
+                amountWei
+            );
+        }
+        await tx.wait();
 
-        const approveTx = await usdc.approve(compAdapterAddr, amountWei);
-        await approveTx.wait();
-
-        const assetAddr = await poolWithSigner.underlying();
-        tx = await router.repayToCompound(compAdapterAddr, assetAddr, amountWei);
-      }
-      await tx.wait();
-      await syncCollateral(isAave, poolWithSigner, signer);
-      await fetchData();
+        await syncCollateral(isAave, pool, signer);
+        await fetchData();
+    } catch (e) {
+        setError(decodeError(e));
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
-  const faucet = async (amount = "10000") => {
+  // Expose so UI can add a manual "Sync Collateral" button
+  const manualSync = async () => {
     setLoading(true);
+    setError(null);
     try {
       const signer = await getSigner();
       const pool   = getPoolContract(signer);
-      const user   = await signer.getAddress();
-      const tx     = await pool.faucet(user, ethers.parseUnits(amount, 6));
-      await tx.wait();
+      const { ok, msg } = await syncCollateral(isAave, pool, signer);
+      if (!ok) setError(`Sync failed: ${msg}`);
       await fetchData();
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  return { stats, loading, deposit, withdraw, borrow, repay, faucet, refetch: fetchData };
+  return { stats, loading, error, deposit, withdraw, borrow, repay, manualSync, refetch: fetchData };
 }

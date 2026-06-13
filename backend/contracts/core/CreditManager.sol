@@ -10,16 +10,12 @@ import {ICreditScoreEngine} from "../interfaces/ICreditScoreEngine.sol";
 ///         Credit scoring and rate math are delegated to the Arbitrum Stylus
 ///         CreditScoreEngine (WASM) for cheaper, more complex computation.
 contract CreditManager is ICreditManager {
-    // ─── Roles ────────────────────────────────────────────────────────────────
-
+    
     address public router;
     address public oracle;
     address public pool;
-
-    /// @notice Arbitrum Stylus CreditScoreEngine — handles all score math in WASM.
+    address public immutable ADMIN;
     ICreditScoreEngine public scoreEngine;
-
-    // ─── Per-user state ───────────────────────────────────────────────────────
 
     mapping(address => uint256) private _collateralValue;
     mapping(address => uint256) private _delegatedCredit;
@@ -38,6 +34,9 @@ contract CreditManager is ICreditManager {
     /// @notice Utilization snapshot 7 days ago — fed into volatility calculation.
     mapping(address => uint256) public prevUtilizationBps;
     mapping(address => uint256) public prevUtilizationTimestamp;
+    mapping(address => uint256) private _aaveCollateral;
+    mapping(address => uint256) private _compoundCollateral;
+
 
     // ─── Events ───────────────────────────────────────────────────────────────
 
@@ -62,14 +61,13 @@ contract CreditManager is ICreditManager {
         _;
     }
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
-
     constructor(address _router, address _oracle) {
-        if (_router == address(0)) revert Errors.ZeroAddress();
-        if (_oracle == address(0)) revert Errors.ZeroAddress();
-        router = _router;
-        oracle = _oracle;
-    }
+    if (_router == address(0)) revert Errors.ZeroAddress();
+    if (_oracle == address(0)) revert Errors.ZeroAddress();
+    router = _router;
+    oracle = _oracle;
+    ADMIN  = msg.sender;   // deployer — permanent emergency key
+}
 
     // ─── Admin setters ────────────────────────────────────────────────────────
 
@@ -79,6 +77,12 @@ contract CreditManager is ICreditManager {
         if (_engine == address(0)) revert Errors.ZeroAddress();
         scoreEngine = ICreditScoreEngine(_engine);
         emit ScoreEngineSet(_engine);
+    }
+
+    function setRouter(address _router) external {
+    if (msg.sender != ADMIN)       revert Errors.NotAuthorized();
+    if (_router == address(0))     revert Errors.ZeroAddress();
+    router = _router;
     }
 
     /// @notice Set the CreditPool. One-time.
@@ -144,18 +148,36 @@ contract CreditManager is ICreditManager {
         emit BorrowRecorded(user, amount, _totalDebt[user]);
     }
 
-    function onRepay(address user, uint256 amount) external onlyRouter {
-        uint256 debt = _totalDebt[user];
-        if (amount > debt) amount = debt;
+    function onRepay(address user, uint256 amount) external onlyRouterOrPool {
+    uint256 debt = _totalDebt[user];
+    if (amount > debt) amount = debt;
 
-        _snapshotUtilization(user);
-        _totalDebt[user] -= amount;
+    _snapshotUtilization(user);
+    _totalDebt[user] -= amount;
 
-        if (amount > 0) {
-            repaymentCount[user] += 1;
-        }
+    if (amount > 0) {
+        repaymentCount[user] += 1;
+    }
 
-        emit RepayRecorded(user, amount, _totalDebt[user]);
+    emit RepayRecorded(user, amount, _totalDebt[user]);
+    }
+
+    function setAaveCollateral(address user, uint256 value) external onlyRouter {
+    _collateralValue[user] = _collateralValue[user] - _aaveCollateral[user] + value;
+    _aaveCollateral[user]  = value;
+    }
+
+    function setCompoundCollateral(address user, uint256 value) external onlyRouter {
+    _collateralValue[user]      = _collateralValue[user] - _compoundCollateral[user] + value;
+    _compoundCollateral[user]   = value;
+    }
+
+    function aaveCollateral(address user) external view returns (uint256) {
+    return _aaveCollateral[user];
+    }
+    
+    function compoundCollateral(address user) external view returns (uint256) {
+    return _compoundCollateral[user];
     }
 
     function onLiquidation(address user, uint256 repayAmount) external override onlyRouter {

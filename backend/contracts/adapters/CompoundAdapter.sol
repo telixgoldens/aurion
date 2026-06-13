@@ -23,13 +23,16 @@ contract CompoundAdapter {
         _;
     }
 
-    function borrow(uint256 amount) external onlyRouter {
-        require(C_TOKEN.borrow(amount) == 0, "COMPOUND_BORROW_FAIL");
+    /// @notice Borrow from Compound and deliver USDC directly to the borrower.
+    /// MockCToken.borrow(amount) sends USDC to msg.sender (this adapter),
+    /// so we immediately forward it to the actual borrower.
+    function borrow(uint256 amount, address borrower) external onlyRouter {
+        require(C_TOKEN.borrowFor(amount, borrower) == 0, "COMPOUND_BORROW_FAIL");
     }
 
-    function repay(uint256 amount) external onlyRouter {
+    function repay(uint256 amount, address borrower) external onlyRouter {
         address underlying = C_TOKEN.underlying();
         IERC20(underlying).forceApprove(address(C_TOKEN), amount);
-        require(C_TOKEN.repayBorrow(amount) == 0, "COMPOUND_REPAY_FAIL");
+        require(C_TOKEN.repayBorrowBehalf(borrower, amount) == 0, "COMPOUND_REPAY_FAIL");
     }
 }

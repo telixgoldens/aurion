@@ -76,33 +76,37 @@ contract CreditRouter {
     }
 
     function syncAaveCollateral(address aavePool, address user) external {
-        if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
-        (bool ok, bytes memory data) = aavePool.staticcall(
-            abi.encodeWithSignature("getUserAccountData(address)", user)
-        );
-        if (!ok) revert Errors.InvalidAmount();
-        (uint256 collateral,,,,,) = abi.decode(data, (uint256, uint256, uint256, uint256, uint256, uint256));
-        creditManager.setCollateralValue(user, collateral);
+    if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
+    (bool ok, bytes memory data) = aavePool.staticcall(
+        abi.encodeWithSignature("getUserAccountData(address)", user)
+    );
+    if (!ok) revert Errors.InvalidAmount();
+    (uint256 collateral,,,,,) = abi.decode(data, (uint256,uint256,uint256,uint256,uint256,uint256));
 
-        if (address(scoreEngine) != address(0)) {
-            scoreEngine.recordSupply(user, collateral);
-        }
+    creditManager.setAaveCollateral(user, collateral);   // ← was setCollateralValue
+
+    if (address(scoreEngine) != address(0)) {
+        scoreEngine.recordSupply(user, collateral);
+    }
+    
     }
 
     function syncCompoundCollateral(address cToken, address user) external {
-        if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
-        (bool ok, bytes memory data) = cToken.staticcall(
-            abi.encodeWithSignature("getAccountSnapshot(address)", user)
-        );
-        if (!ok) revert Errors.InvalidAmount();
-        (, uint256 cTokenBal,, uint256 exchangeRate) = abi.decode(data, (uint256, uint256, uint256, uint256));
-        uint256 collateral = (cTokenBal * exchangeRate) / 1e18;
-        creditManager.setCollateralValue(user, collateral);
+    if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
+    (bool ok, bytes memory data) = cToken.staticcall(
+        abi.encodeWithSignature("getAccountSnapshot(address)", user)
+    );
+    if (!ok) revert Errors.InvalidAmount();
+    (, uint256 cTokenBal,, uint256 exchangeRate) =
+        abi.decode(data, (uint256,uint256,uint256,uint256));
+    uint256 collateral = (cTokenBal * exchangeRate) / 1e18;
 
-        if (address(scoreEngine) != address(0)) {
-            scoreEngine.recordSupply(user, collateral);
-        }
+    creditManager.setCompoundCollateral(user, collateral);  // ← was setCollateralValue
+
+    if (address(scoreEngine) != address(0)) {
+        scoreEngine.recordSupply(user, collateral);
     }
+}
 
     function borrowFromAave(
         address adapter,
@@ -130,28 +134,29 @@ contract CreditRouter {
     }
 
     function borrowFromCompound(
-        address adapter,
-        uint256 amount
-    ) external {
-        if (amount == 0) revert Errors.InvalidAmount();
-        if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
-        if (!creditManager.validateBorrow(msg.sender, amount)) revert Errors.InsufficientCredit();
+    address adapter,
+    uint256 amount
+) external {
+    if (amount == 0) revert Errors.InvalidAmount();
+    if (!ORACLE.healthy()) revert Errors.OracleUnhealthy();
+    if (!creditManager.validateBorrow(msg.sender, amount)) revert Errors.InsufficientCredit();
 
-        creditManager.onBorrow(msg.sender, amount);
-        creditManager.recordCompoundBorrow(msg.sender, amount);
+    creditManager.onBorrow(msg.sender, amount);
+    creditManager.recordCompoundBorrow(msg.sender, amount);
 
-        protocolCount[msg.sender] = _activeProtocolCount(msg.sender);
+    protocolCount[msg.sender] = _activeProtocolCount(msg.sender);
 
-        if (address(scoreEngine) != address(0)) {
-            uint256 limit = creditManager.creditLimit(msg.sender);
-            uint256 debt  = creditManager.totalDebt(msg.sender);
-            uint256 utilBps = limit > 0 ? (debt * 10_000) / limit : 0;
-            scoreEngine.recordBorrow(msg.sender, amount, protocolCount[msg.sender], utilBps);
-        }
-
-        CompoundAdapter(adapter).borrow(amount);
-        emit BorrowedFromCompound(msg.sender, amount);
+    if (address(scoreEngine) != address(0)) {
+        uint256 limit = creditManager.creditLimit(msg.sender);
+        uint256 debt  = creditManager.totalDebt(msg.sender);
+        uint256 utilBps = limit > 0 ? (debt * 10_000) / limit : 0;
+        scoreEngine.recordBorrow(msg.sender, amount, protocolCount[msg.sender], utilBps);
     }
+
+    // Pass msg.sender so adapter sends USDC to borrower, not itself
+    CompoundAdapter(adapter).borrow(amount, msg.sender);
+    emit BorrowedFromCompound(msg.sender, amount);
+}
 
     function repayToAave(
         address adapter,
@@ -181,7 +186,7 @@ contract CreditRouter {
         if (amount == 0) revert Errors.InvalidAmount();
 
         IERC20(asset).safeTransferFrom(msg.sender, adapter, amount);
-        CompoundAdapter(adapter).repay(amount);
+        CompoundAdapter(adapter).repay(amount, msg.sender);
 
         creditManager.onRepay(msg.sender, amount);
         creditManager.recordCompoundRepay(msg.sender, amount);
@@ -236,10 +241,9 @@ contract CreditRouter {
     }
 
     function setCreditManager(address _cm) external onlyOwner {
-        if (address(creditManager) != address(0)) revert Errors.AlreadySet();
-        if (_cm == address(0)) revert Errors.ZeroAddress();
-        creditManager = ICreditManager(_cm);
-        emit CreditManagerSet(_cm);
+    if (_cm == address(0)) revert Errors.ZeroAddress();
+    creditManager = ICreditManager(_cm);
+    emit CreditManagerSet(_cm);
     }
 
     function setInsurancePool(address pool) external onlyOwner {

@@ -66,6 +66,7 @@ contract MockAavePool {
     function repay(
         address asset,
         uint256 amount,
+        uint256,
         address onBehalfOf
     ) external returns (uint256) {
         require(asset == address(USDC), "UNSUPPORTED_ASSET");
@@ -85,7 +86,6 @@ contract MockAavePool {
         );
 
         emit Repaid(onBehalfOf, repayAmount);
-
         return repayAmount;
     }
 
@@ -105,4 +105,39 @@ contract MockAavePool {
     function userDebt(address user) external view returns (uint256) {
         return debtOf[user];
     }
+    
+    function getUserAccountData(address user)
+    external
+    view
+    returns (
+        uint256 totalCollateralBase,
+        uint256 totalDebtBase,
+        uint256 availableBorrowsBase,
+        uint256 currentLiquidationThreshold,
+        uint256 ltv,
+        uint256 healthFactor
+    )
+{
+    uint256 collateral = depositsOf[user];
+    uint256 debt = debtOf[user];
+
+    uint256 availableBorrow =
+        collateral > debt
+            ? collateral - debt
+            : 0;
+
+    uint256 hf =
+        debt == 0
+            ? type(uint256).max
+            : (collateral * 1e18) / debt;
+
+    return (
+        collateral,
+        debt,
+        availableBorrow,
+        8000,
+        7500,
+        hf
+    );
+}
 }

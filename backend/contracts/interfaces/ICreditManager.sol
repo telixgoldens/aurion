@@ -21,6 +21,10 @@ interface ICreditManager {
     function recordCompoundBorrow(address user, uint256 amount) external;
     function recordAaveRepay(address user, uint256 amount) external;
     function recordCompoundRepay(address user, uint256 amount) external;
+    function setAaveCollateral(address user, uint256 value) external;
+    function setCompoundCollateral(address user, uint256 value) external;
+    function aaveCollateral(address user) external view returns (uint256);
+    function compoundCollateral(address user) external view returns (uint256);
 
     // ─── Score engine ─────────────────────────────────────────────────────────
     function setScoreEngine(address engine) external;

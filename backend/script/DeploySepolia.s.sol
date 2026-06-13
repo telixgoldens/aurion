@@ -27,34 +27,28 @@ contract DeploySepolia is Script {
         uint256 faucetCooldown = 3600;
 
         vm.startBroadcast(pk);
+        
 
-        // 1) Deploy test USDC + faucet
         TestUSDC usdc = new TestUSDC();
         TokenFaucet faucet = new TokenFaucet(address(usdc), faucetClaim, faucetCooldown);
         usdc.setMinter(address(faucet), true);
 
-        // 2) Deploy oracle + liquidation controller
         CreditOracle oracle = new CreditOracle();
         LiquidationController liq = new LiquidationController(bonus);
 
-        // 3) Deploy router (manager + insurancePool initially 0)
         CreditRouter router = new CreditRouter(
             address(0), address(oracle), address(liq), address(0)
         );
 
-        // 4) Deploy credit manager, then set into router
         CreditManager manager = new CreditManager(address(router), address(oracle));
         router.setCreditManager(address(manager));
 
-        // 5) Deploy insurance pool, then set into router
         InsurancePool insurancePool = new InsurancePool(address(usdc), address(router));
         router.setInsurancePool(address(insurancePool));
 
-        // 6) Deploy credit pool (controller = router)
         CreditPool creditPool = new CreditPool(address(usdc), address(manager), address(router));
         router.setCreditPool(address(creditPool));
 
-        // 7) Deploy mock pools and seed with liquidity
         MockAavePool mockAave = new MockAavePool(address(usdc));
         MockCToken mockCToken = new MockCToken(address(usdc));
         usdc.setMinter(deployer, true);
@@ -62,13 +56,56 @@ contract DeploySepolia is Script {
         usdc.mint(address(mockAave), fiveMillion);
         usdc.mint(address(mockCToken), fiveMillion);
 
-        // 8) Adapters point to mocks, router-only access
         AaveAdapter aaveAdapter = new AaveAdapter(address(mockAave), address(router));
         CompoundAdapter compoundAdapter = new CompoundAdapter(address(mockCToken), address(router));
 
+        router.setScoreEngine(0xF1914F16Ee1135cAc49cd48E5AD2Ad036792602E);
+        ICreditScoreEngine(0xF1914F16Ee1135cAc49cd48E5AD2Ad036792602E)
+            .setAuthorised(address(router),  true);
+        ICreditScoreEngine(0xF1914F16Ee1135cAc49cd48E5AD2Ad036792602E)
+            .setAuthorised(address(manager), true);
+
         vm.stopBroadcast();
 
-        // --- Logs ---
+        // ── Wiring verification (will revert if anything is wrong) ──────────
+        require(
+            address(router.creditManager()) == address(manager),
+            "WIRE: router.creditManager mismatch"
+        );
+        require(
+            manager.router() == address(router),
+            "WIRE: manager.router mismatch"
+        );
+        require(
+            address(router.ORACLE()) == address(oracle),
+            "WIRE: oracle mismatch"
+        );
+        require(
+            oracle.healthy() == true,
+            "WIRE: oracle not healthy"
+        );
+        require(
+            address(router.insurancePool()) == address(insurancePool),
+            "WIRE: insurancePool mismatch"
+        );
+        require(
+            address(router.creditPool()) == address(creditPool),
+            "WIRE: creditPool mismatch"
+        );
+        require(
+            address(manager.pool()) == address(creditPool),
+            "WIRE: manager.pool mismatch"
+        );
+        require(
+            aaveAdapter.ROUTER() == address(router),
+            "WIRE: aaveAdapter.ROUTER mismatch"
+        );
+        require(
+            compoundAdapter.ROUTER() == address(router),
+            "WIRE: compoundAdapter.ROUTER mismatch"
+        );
+
+        console2.log("=== ALL WIRING CHECKS PASSED ===");
         console2.log("TestUSDC:             ", address(usdc));
         console2.log("TokenFaucet:          ", address(faucet));
         console2.log("CreditOracle:         ", address(oracle));
@@ -81,9 +118,6 @@ contract DeploySepolia is Script {
         console2.log("CompoundAdapter:      ", address(compoundAdapter));
         console2.log("MockAavePool:         ", address(mockAave));
         console2.log("MockCToken:           ", address(mockCToken));
-        console2.log("StylusScoreEngine:     wire after deploy via cast:");
-        console2.log("  cast send <ROUTER>  \"setScoreEngine(address)\" 0xf1914f16ee1135cac49cd48e5ad2ad036792602e");
-        console2.log("  cast send <STYLUS>  \"setAuthorised(address,bool)\" <MANAGER> true");
 
         _writeJson(
             block.chainid,

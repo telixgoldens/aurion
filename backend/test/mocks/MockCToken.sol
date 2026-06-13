@@ -21,7 +21,6 @@ contract MockCToken {
         USDC = IERC20(usdc);
     }
 
-    /// @notice Required by ICompound — returns the underlying ERC20 (USDC).
     function underlying() external view returns (address) {
         return address(USDC);
     }
@@ -66,16 +65,30 @@ contract MockCToken {
         return 0;
     }
 
-    /// @notice Original repay — called directly by users.
+    function borrowFor(uint256 amount, address borrower) external returns (uint256) {
+    require(amount > 0, "INVALID_AMOUNT");
+    require(availableLiquidity() >= amount, "INSUFFICIENT_LIQUIDITY");
+
+    debt[borrower] += amount;
+    totalBorrows += amount;
+
+    require(USDC.transfer(borrower, amount), "TRANSFER_FAIL");
+
+    emit Borrowed(borrower, amount);
+    return 0;
+    }
+
     function repay(uint256 amount) external {
         _repay(msg.sender, amount);
     }
 
-    /// @notice Compound-style repay — called by CompoundAdapter (which holds
-    ///         the tokens and calls on behalf of the borrower).
-    ///         Returns 0 on success to match the Compound cToken ABI.
     function repayBorrow(uint256 amount) external returns (uint256) {
         _repay(msg.sender, amount);
+        return 0;
+    }
+
+    function repayBorrowBehalf(address borrower, uint256 amount) external returns (uint256) {
+        _repay(borrower, amount);
         return 0;
     }
 
@@ -96,7 +109,14 @@ contract MockCToken {
         return debt[user];
     }
 
-    // ─── Internal ─────────────────────────────────────────────────────────────
+    function getAccountSnapshot(address user) external view returns (
+        uint256 error,
+        uint256 cTokenBalance,
+        uint256 borrowBalance,
+        uint256 exchangeRateMantissa
+    ) {
+        return (0, depositsOf[user], debt[user], 1e18);
+    }
 
     function _repay(address borrower, uint256 amount) internal {
         require(amount > 0, "INVALID_AMOUNT");
