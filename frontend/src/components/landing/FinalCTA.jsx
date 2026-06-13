@@ -20,16 +20,6 @@ export function FinalCTA() {
           </button>
         </div>
       </div>
-
-      <footer className="mt-24 pt-12 border-t border-[rgba(212,175,55,0.1)] text-center">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#f0d97d] flex items-center justify-center">
-            <span className="text-[#0a0e17] font-bold">A</span>
-          </div>
-          <span className="text-xl font-semibold text-white">Aurion Protocol</span>
-        </div>
-        <p className="text-gray-500 text-sm">© 2026 Aurion Protocol. All rights reserved.</p>
-      </footer>
     </section>
   );
 }

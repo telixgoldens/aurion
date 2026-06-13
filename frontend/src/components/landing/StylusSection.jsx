@@ -24,7 +24,7 @@ export function StylusSection() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <div className="inline-block px-4 py-2 rounded-full bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37] text-sm font-semibold mb-4">
-            Coming Soon
+            Now live on testnet
           </div>
           <h2 className="text-4xl font-bold mb-4 text-white">High-performance risk engine</h2>
           <p className="text-gray-400 text-lg">Powered by Arbitrum Stylus</p>

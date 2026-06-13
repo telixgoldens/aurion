@@ -3,8 +3,8 @@ import { Check, Circle } from 'lucide-react';
 export function Roadmap() {
   const milestones = [
     { title: "Onchain credit scoring", status: "completed" },
-    { title: "Stylus-based risk engine", status: "in-progress" },
-    { title: "Multi-protocol aggregation", status: "upcoming" },
+    { title: "Stylus-based risk engine", status: "now live" },
+    { title: "Multi-protocol aggregation", status: "in-progress" },
     { title: "DAO governance", status: "upcoming" }
   ];
 
