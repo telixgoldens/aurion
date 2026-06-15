@@ -26,7 +26,7 @@ contract LiquidationInsuranceTest is BaseTest {
         vm.prank(address(router));
         creditManager.setCollateralValue(alice, 50e6);
 
-        // sanity (avoid “mystery 20e6”)
+        
         assertEq(creditManager.totalDebt(alice), 100e6);
         assertEq(router.closeFactorBps(), 5000);
     }

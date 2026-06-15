@@ -18,8 +18,8 @@ export function useDashboard() {
     riskTier: "Restricted",
     riskTierValue: 0,
     collateralValue: 0,
-    aaveCollateral: 0,       // NEW
-    compoundCollateral: 0,   // NEW
+    aaveCollateral: 0,       
+    compoundCollateral: 0,   
     delegatedCredit: 0,
     borrows: 0,
     repays: 0,
@@ -41,8 +41,8 @@ export function useDashboard() {
         score,
         tier,
         metrics,
-        aaveColl,       // NEW
-        compoundColl,   // NEW
+        aaveColl,       
+        compoundColl,   
       ] = await Promise.all([
         manager.totalDebt(address),
         manager.creditLimit(address),
@@ -50,8 +50,8 @@ export function useDashboard() {
         manager.creditScore(address),
         manager.riskTier(address),
         manager.userMetrics(address),
-        manager.aaveCollateral(address),     // NEW — needs CreditManager redeploy
-        manager.compoundCollateral(address), // NEW — needs CreditManager redeploy
+        manager.aaveCollateral(address),     
+        manager.compoundCollateral(address), 
       ]);
 
       const available = limit > debt ? limit - debt : 0n;
@@ -66,9 +66,9 @@ export function useDashboard() {
         creditScore:    Number(score),
         riskTier:       tierLabels[Number(tier)] ?? "Restricted",
         riskTierValue:  Number(tier),
-        collateralValue:   fromUnits(metrics.collateral, 6), // total (aave + compound)
-        aaveCollateral:    fromUnits(aaveColl, 6),           // NEW
-        compoundCollateral: fromUnits(compoundColl, 6),      // NEW
+        collateralValue:   fromUnits(metrics.collateral, 6), 
+        aaveCollateral:    fromUnits(aaveColl, 6),           
+        compoundCollateral: fromUnits(compoundColl, 6),      
         delegatedCredit:   fromUnits(metrics.delegated, 6),
         borrows:      Number(metrics.borrows),
         repays:       Number(metrics.repays),

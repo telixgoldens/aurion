@@ -24,7 +24,6 @@ function safeDiv(a, b) {
   return a / b;
 }
 
-// ─── Deposit Modal ─────────────────────────────────────────────────────────────
 function DepositModal({ open, onClose, onConfirm, loading, walletBalance }) {
   const [amount, setAmount] = useState("");
   if (!open) return null;
@@ -94,7 +93,6 @@ function DepositModal({ open, onClose, onConfirm, loading, walletBalance }) {
   );
 }
 
-// ─── Withdraw Modal ────────────────────────────────────────────────────────────
 function WithdrawModal({ open, onClose, onConfirm, loading, myDeposit }) {
   const [amount, setAmount] = useState("");
   if (!open) return null;
@@ -164,12 +162,11 @@ function WithdrawModal({ open, onClose, onConfirm, loading, myDeposit }) {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
 function Pools({ onNavigate }) {
   const [account, setAccount]           = useState("");
   const [loading, setLoading]           = useState(false);
   const [depositOpen, setDepositOpen]   = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);   // NEW
+  const [withdrawOpen, setWithdrawOpen] = useState(false);   
   const [walletBalance, setWalletBalance] = useState(0);
   const { alertState, showAlert, closeAlert } = useAlert();
 
@@ -195,7 +192,7 @@ function Pools({ onNavigate }) {
     availableLiquidityUsd: 0,
     utilizationPct: 0,
     totalDelegatedUsd: 0,
-    myDeposit: 0,    // NEW
+    myDeposit: 0,   
   });
 
   const pools = useMemo(() => [{
@@ -258,13 +255,13 @@ function Pools({ onNavigate }) {
         pool.totalDeposits(),
         pool.availableLiquidity(),
         pool.totalDelegated(),
-        pool.depositOf(userAddress),    // NEW
+        pool.depositOf(userAddress),    
       ]);
 
     const totalDepositsNum  = Number(ethers.formatUnits(totalDeposits      ?? 0n, 6));
     const availableLiqNum   = Number(ethers.formatUnits(availableLiquidity ?? 0n, 6));
     const totalDelegatedNum = Number(ethers.formatUnits(totalDelegated     ?? 0n, 6));
-    const myDepositNum      = Number(ethers.formatUnits(myDepositRaw       ?? 0n, 6));  // NEW
+    const myDepositNum      = Number(ethers.formatUnits(myDepositRaw       ?? 0n, 6));  
     const utilized          = Math.max(0, totalDepositsNum - availableLiqNum);
 
     setPoolLive({
@@ -275,7 +272,7 @@ function Pools({ onNavigate }) {
       availableLiquidityUsd: availableLiqNum,
       totalDelegatedUsd:     totalDelegatedNum,
       utilizationPct:        safeDiv(utilized, totalDepositsNum) * 100,
-      myDeposit:             myDepositNum,    // NEW
+      myDeposit:             myDepositNum,    
     });
 
     const usdc = new ethers.Contract(
@@ -328,7 +325,6 @@ function Pools({ onNavigate }) {
     }
   }
 
-  // NEW ─── Withdraw handler ──────────────────────────────────────────────────
   async function handleWithdraw(amountHuman) {
     setLoading(true);
     try {
@@ -338,8 +334,6 @@ function Pools({ onNavigate }) {
       const manager     = getCreditManager(provider);
       const poolAddress = await manager.pool();
       const amountWei   = ethers.parseUnits(amountHuman.toString(), 6);
-
-      // No approval needed — pool sends USDC to msg.sender directly
       const pool = new ethers.Contract(poolAddress, CreditPool, signer);
       const tx   = await pool.withdraw(amountWei);
       await tx.wait();
@@ -372,8 +366,6 @@ function Pools({ onNavigate }) {
         loading={loading}
         walletBalance={walletBalance}
       />
-
-      {/* NEW */}
       <WithdrawModal
         open={withdrawOpen}
         onClose={() => setWithdrawOpen(false)}
@@ -480,7 +472,6 @@ function Pools({ onNavigate }) {
                     <span className="text-white">{pool.insuranceCoverage}</span>
                   </div>
                 </TableCell>
-                {/* NEW — two buttons side by side */}
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Button

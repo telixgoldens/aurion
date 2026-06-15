@@ -23,7 +23,7 @@ function Borrow() {
   const { isConnected, address }        = useAccount();
   const { alertState, showAlert, closeAlert } = useAlert();
   const { data }                        = useDashboard();
-  const { borrowFromAave, borrowFromCompound, repay, loading } = useBorrow(); // added repay
+  const { borrowFromAave, borrowFromCompound, repay, loading } = useBorrow(); 
   const [amount, setAmount]             = useState("");
   const [selectedAsset, setSelectedAsset] = useState("USDC");
   const [route, setRoute]               = useState("AAVE");
@@ -90,7 +90,7 @@ function Borrow() {
   };
 
   const handleMax    = () => setAmount(String(maxBorrow));
-  const handleMaxDebt = () => setAmount(String(debt));   // NEW — max repay = outstanding debt
+  const handleMaxDebt = () => setAmount(String(debt));   
 
   const handleBorrow = async () => {
     if (!isConnected || !address) {
@@ -118,7 +118,6 @@ function Borrow() {
     }
   };
 
-  // NEW ─── Repay handler ──────────────────────────────────────────────────────
   const handleRepay = async () => {
     if (!isConnected || !address) {
       showAlert("Connect wallet first", "info", "Wallet Required");
@@ -201,7 +200,6 @@ function Borrow() {
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   <span className="text-xl font-bold text-white">{selectedAsset}</span>
-                  {/* Two MAX shortcuts — one for borrow, one for repay */}
                   <div className="flex flex-col gap-1">
                     <button
                       className="text-[10px] text-[#d4af37] font-bold leading-none"
@@ -236,8 +234,6 @@ function Borrow() {
                 </div>
               </div>
             </div>
-
-            {/* Borrow button — unchanged */}
             <Button
               className="w-full bg-[#d4af37] hover:bg-[#b8860b] text-[#0a0e17] font-bold h-14 rounded-xl transition-all"
               onClick={handleBorrow}
@@ -250,8 +246,6 @@ function Borrow() {
               )}
               EXECUTE CREDIT ROUTING
             </Button>
-
-            {/* NEW — Repay button */}
             <Button
               className="w-full bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-400 font-bold h-12 rounded-xl transition-all disabled:opacity-40"
               onClick={handleRepay}

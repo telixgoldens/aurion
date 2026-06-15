@@ -8,7 +8,6 @@ contract LiquidationTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        // Fund insurance pool so liquidation bonus can be paid
         usdc.mint(address(this), 1_000_000e6);
         usdc.approve(address(insurancePool), type(uint256).max);
         insurancePool.deposit(200_000e6);
@@ -24,11 +23,9 @@ contract LiquidationTest is BaseTest {
         vm.prank(address(router));
         creditManager.onBorrow(alice, 100e6);
 
-        // Reduce credit => HF < 1
         vm.prank(address(router));
         creditManager.setCollateralValue(alice, 50e6);
 
-        // sanity
         assertEq(creditManager.totalDebt(alice), 100e6);
         assertEq(router.closeFactorBps(), 5000);
     }
@@ -63,16 +60,14 @@ contract LiquidationTest is BaseTest {
     usdc.approve(address(router), type(uint256).max);
     vm.stopPrank();
 
-    // allow 100% close
     router.setCloseFactorBps(10_000);
 
     uint256 debtBefore = creditManager.totalDebt(alice);
 
     vm.startPrank(bob);
-    router.liquidate(alice, 200e6, address(usdc)); // request > debt
+    router.liquidate(alice, 200e6, address(usdc)); 
     vm.stopPrank();
 
-    // should be fully repaid (capped to debt)
     assertEq(creditManager.totalDebt(alice), 0);
     assertTrue(creditManager.frozen(alice));
     assertEq(debtBefore, 100e6);

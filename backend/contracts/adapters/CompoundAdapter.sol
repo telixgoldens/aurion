@@ -23,9 +23,6 @@ contract CompoundAdapter {
         _;
     }
 
-    /// @notice Borrow from Compound and deliver USDC directly to the borrower.
-    /// MockCToken.borrow(amount) sends USDC to msg.sender (this adapter),
-    /// so we immediately forward it to the actual borrower.
     function borrow(uint256 amount, address borrower) external onlyRouter {
         require(C_TOKEN.borrowFor(amount, borrower) == 0, "COMPOUND_BORROW_FAIL");
     }

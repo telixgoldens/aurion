@@ -16,7 +16,6 @@ contract CreditPool {
     uint256 private _totalDeposits;
     uint256 private _totalDelegated;
 
-    // Per-lender deposit balance — needed to enforce withdraw limits
     mapping(address => uint256) private _deposits;
 
     event Deposited(address indexed user, uint256 amount);
@@ -35,7 +34,6 @@ contract CreditPool {
         _;
     }
 
-    // ── Views ─────────────────────────────────────────────────────────────────
 
     function totalDeposits()     external view returns (uint256) { return _totalDeposits; }
     function totalDelegated()    external view returns (uint256) { return _totalDelegated; }
@@ -45,20 +43,18 @@ contract CreditPool {
         return _totalDeposits - _totalDelegated;
     }
 
-    // ── Lender actions ────────────────────────────────────────────────────────
 
     function deposit(uint256 amount) external {
         if (amount == 0) revert Errors.InvalidAmount();
         USDC.safeTransferFrom(msg.sender, address(this), amount);
         _totalDeposits        += amount;
-        _deposits[msg.sender] += amount;   // track per-lender
+        _deposits[msg.sender] += amount;   
         emit Deposited(msg.sender, amount);
     }
 
     function withdraw(uint256 amount) external {
         if (amount == 0)                          revert Errors.InvalidAmount();
         if (_deposits[msg.sender] < amount)       revert Errors.InvalidAmount();
-        // Cannot withdraw funds currently backing active delegations
         if (availableLiquidity() < amount)        revert Errors.InsufficientCredit();
 
         _deposits[msg.sender] -= amount;
@@ -66,8 +62,6 @@ contract CreditPool {
         USDC.safeTransfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
     }
-
-    // ── Admin ─────────────────────────────────────────────────────────────────
 
     function delegateCredit(address user, uint256 amount) external onlyController {
         if (amount == 0)                    revert Errors.InvalidAmount();
@@ -77,8 +71,6 @@ contract CreditPool {
         emit CreditDelegated(user, amount);
     }
 
-    // ── Borrower repay ────────────────────────────────────────────────────────
-
     function repay(uint256 amount) external {
         if (amount == 0) revert Errors.InvalidAmount();
 
@@ -87,11 +79,8 @@ contract CreditPool {
         uint256 repayAmount = amount > debt ? debt : amount;
 
         USDC.safeTransferFrom(msg.sender, address(this), repayAmount);
-
-        // Reduce CreditManager debt
         CREDIT_MANAGER.onRepay(msg.sender, repayAmount);
 
-        // Free delegated capacity proportionally
         uint256 delegated = CREDIT_MANAGER.delegatedCredit(msg.sender);
         uint256 toRelease = repayAmount > delegated ? delegated : repayAmount;
         if (toRelease > 0) {

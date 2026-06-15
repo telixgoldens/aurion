@@ -20,15 +20,12 @@ function CompoundPool({ onNavigate }) {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      {/* Back button */}
       <button
         onClick={() => onNavigate("markets")}
         className="flex items-center gap-2 text-sm text-[#F5DEB3]/60 hover:text-[#D4AF37] transition-colors"
       >
         ← Back to Markets
       </button>
-
-      {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-[#22d3ee] shadow-[0_0_6px_#22d3ee]" />
@@ -39,8 +36,6 @@ function CompoundPool({ onNavigate }) {
           Mint cUSDC, borrow against it, and earn interest as the exchange rate grows.
         </p>
       </div>
-
-      {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-4">
           <div className="text-xs text-[#F5DEB3]/50 mb-1">Supply APY</div>
@@ -70,11 +65,8 @@ function CompoundPool({ onNavigate }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Position */}
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6 space-y-4">
           <h2 className="text-white text-lg">Your Position</h2>
-
-          {/* cToken balance highlight */}
           <div className="rounded-lg bg-[#0B1437] border border-[#22d3ee]/10 p-4">
             <div className="text-xs text-[#22d3ee]/60 uppercase tracking-widest mb-1">cUSDC Balance</div>
             <div className="text-[#22d3ee] text-2xl font-bold">
@@ -127,11 +119,8 @@ function CompoundPool({ onNavigate }) {
             )}
           </div>
         </Card>
-
-        {/* Actions */}
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6 space-y-4">
           <h2 className="text-white text-lg">Actions</h2>
-
           <div className="grid grid-cols-4 gap-1 bg-[#0B1437] rounded-lg p-1">
             {tabLabels.map((t) => (
               <button
@@ -185,8 +174,6 @@ function CompoundPool({ onNavigate }) {
           </Button>
         </Card>
       </div>
-
-      {/* Cross-protocol note */}
       <div className="rounded-xl border border-[#22d3ee]/20 bg-[#0e2233]/60 px-5 py-3 text-xs text-[#7dd3fc] flex gap-3 items-start">
         <span className="text-base mt-0.5">🔵</span>
         <span>

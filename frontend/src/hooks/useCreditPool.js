@@ -26,7 +26,6 @@ export const useCreditPool = () => {
     }
   };
 
-  // Lender withdraws their deposited USDC back
   const withdraw = async (amount, decimals = 6) => {
     setLoading(true);
     try {
@@ -34,7 +33,7 @@ export const useCreditPool = () => {
       const pool      = await getCreditPool(signer);
       const amountWei = ethers.parseUnits(amount.toString(), decimals);
 
-      // No approval needed — pool sends USDC to msg.sender directly
+      
       const tx = await pool.withdraw(amountWei);
       await tx.wait();
       return tx;
@@ -43,7 +42,6 @@ export const useCreditPool = () => {
     }
   };
 
-  // Borrower repays their Aurion credit debt
   const repay = async (amount, decimals = 6) => {
     setLoading(true);
     try {
@@ -52,8 +50,6 @@ export const useCreditPool = () => {
       const usdcAddress = await pool.USDC();
       const token       = getToken(usdcAddress, signer);
       const amountWei   = ethers.parseUnits(amount.toString(), decimals);
-
-      // Pool pulls USDC from user — approve it first
       const approveTx = await token.approve(await pool.getAddress(), amountWei);
       await approveTx.wait();
 

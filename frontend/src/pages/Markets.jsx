@@ -55,8 +55,6 @@ function Markets({ onNavigate }) {
           </Card>
         ))}
       </div>
-
-      {/* Credit score callout */}
       <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#1a0e2e] border border-[#a78bfa]/30 flex items-center justify-center text-lg">

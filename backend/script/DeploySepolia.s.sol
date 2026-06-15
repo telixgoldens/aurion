@@ -67,7 +67,6 @@ contract DeploySepolia is Script {
 
         vm.stopBroadcast();
 
-        // ── Wiring verification (will revert if anything is wrong) ──────────
         require(
             address(router.creditManager()) == address(manager),
             "WIRE: router.creditManager mismatch"

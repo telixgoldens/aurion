@@ -83,7 +83,7 @@ contract CreditRouter {
     if (!ok) revert Errors.InvalidAmount();
     (uint256 collateral,,,,,) = abi.decode(data, (uint256,uint256,uint256,uint256,uint256,uint256));
 
-    creditManager.setAaveCollateral(user, collateral);   // ← was setCollateralValue
+    creditManager.setAaveCollateral(user, collateral);   
 
     if (address(scoreEngine) != address(0)) {
         scoreEngine.recordSupply(user, collateral);
@@ -101,7 +101,7 @@ contract CreditRouter {
         abi.decode(data, (uint256,uint256,uint256,uint256));
     uint256 collateral = (cTokenBal * exchangeRate) / 1e18;
 
-    creditManager.setCompoundCollateral(user, collateral);  // ← was setCollateralValue
+    creditManager.setCompoundCollateral(user, collateral);  
 
     if (address(scoreEngine) != address(0)) {
         scoreEngine.recordSupply(user, collateral);
@@ -153,7 +153,6 @@ contract CreditRouter {
         scoreEngine.recordBorrow(msg.sender, amount, protocolCount[msg.sender], utilBps);
     }
 
-    // Pass msg.sender so adapter sends USDC to borrower, not itself
     CompoundAdapter(adapter).borrow(amount, msg.sender);
     emit BorrowedFromCompound(msg.sender, amount);
 }

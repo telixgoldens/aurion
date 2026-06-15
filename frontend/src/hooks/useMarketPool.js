@@ -3,18 +3,16 @@ import { ethers } from "ethers";
 import { getBrowserProvider, getSigner } from "../lib/eth";
 import { getUSDC, getCreditRouter, getCreditManager, addresses } from "../lib/contracts";
 
-// Maps 4-byte selectors to human-readable messages.
-// Run: cast sig "ErrorName()" to get the selector for any error in Errors.sol
+
 const ERROR_SELECTORS = {
   "0x8ac4bc73": "InsufficientCredit — your collateral hasn't been synced to CreditManager yet. Try depositing first, then clicking 'Sync Collateral'.",
   "0x8baa579f": "NotAuthorized — CreditRouter address mismatch in CreditManager. Redeploy and update .env.",
   "0x82b42900": "NotAuthorized (variant) — same as above.",
   "0xf4d678b8": "InsufficientBalance",
-  // Add more as you discover them from cast sig output
+  
 };
 
 function decodeError(e) {
-  // ethers v6 bubbles the raw revert data in e.data
   const raw = e?.data ?? e?.error?.data ?? "";
   const selector = typeof raw === "string" ? raw.slice(0, 10) : "";
   if (selector && ERROR_SELECTORS[selector]) return ERROR_SELECTORS[selector];
@@ -48,8 +46,8 @@ const defaultStats = {
   userDeposit: 0,
   userDebt: 0,
   usdcBalance: 0,
-  collateral: 0,      // what CreditManager actually sees
-  creditLimit: 0,     // collateral + delegated
+  collateral: 0,      
+  creditLimit: 0,     
   address: "",
 };
 
@@ -80,8 +78,8 @@ export function useMarketPool(getPoolContract, isAave) {
         pool.userDeposit(user),
         pool.userDebt(user),
         usdc.balanceOf(user),
-        manager.collateralValue(user),   // what CreditManager sees
-        manager.creditLimit(user),        // collateral + delegated
+        manager.collateralValue(user),   
+        manager.creditLimit(user),        
       ]);
 
       setStats({
@@ -158,7 +156,6 @@ export function useMarketPool(getPoolContract, isAave) {
       const router    = getCreditRouter(signer);
       const amountWei = ethers.parseUnits(amount.toString(), 6);
 
-      // Pre-flight: if collateral is 0, surface a clear error before sending tx
       if (stats.collateral === 0) {
         throw new Error("No collateral recorded in CreditManager. Deposit first, then sync.");
       }
@@ -190,8 +187,6 @@ export function useMarketPool(getPoolContract, isAave) {
         const usdc      = getUSDC(signer);
         const router    = getCreditRouter(signer);
         const amountWei = ethers.parseUnits(amount.toString(), 6);
-
-        // ✅ Approve CREDIT_ROUTER — it's the contract calling safeTransferFrom
         const approveTx = await usdc.approve(addresses.CREDIT_ROUTER, amountWei);
         await approveTx.wait();
 
@@ -220,7 +215,6 @@ export function useMarketPool(getPoolContract, isAave) {
     }
 };
 
-  // Expose so UI can add a manual "Sync Collateral" button
   const manualSync = async () => {
     setLoading(true);
     setError(null);

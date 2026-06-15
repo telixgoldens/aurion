@@ -20,15 +20,12 @@ function AavePool({ onNavigate }) {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      {/* Back button */}
       <button
         onClick={() => onNavigate("markets")}
         className="flex items-center gap-2 text-sm text-[#F5DEB3]/60 hover:text-[#D4AF37] transition-colors"
       >
         ← Back to Markets
       </button>
-
-      {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-[#4ade80] shadow-[0_0_6px_#4ade80]" />
@@ -39,8 +36,6 @@ function AavePool({ onNavigate }) {
           Supply USDC as collateral, borrow against it, and build your on-chain credit history.
         </p>
       </div>
-
-      {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-4">
           <div className="text-xs text-[#F5DEB3]/50 mb-1">Supply APY</div>
@@ -57,7 +52,6 @@ function AavePool({ onNavigate }) {
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-4">
           <div className="text-xs text-[#F5DEB3]/50 mb-1">Utilization</div>
           <div className="text-white text-xl">{stats.utilization.toFixed(2)}%</div>
-          {/* Utilization bar */}
           <div className="mt-2 h-1 rounded bg-[#0B1437] overflow-hidden">
             <div
               className="h-full rounded transition-all duration-700"
@@ -71,7 +65,6 @@ function AavePool({ onNavigate }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Position */}
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6 space-y-4">
           <h2 className="text-white text-lg">Your Position</h2>
 
@@ -92,8 +85,6 @@ function AavePool({ onNavigate }) {
               <span className="text-[#F5DEB3]/60">Available to Borrow</span>
               <span className="text-white font-medium">{stats.availableLiquidity?.toFixed(2) ?? "—"} USDC</span>
             </div>
-
-            {/* Health factor */}
             {stats.healthFactor != null && (
               <div className="flex justify-between text-sm pt-2 border-t border-[#D4AF37]/10">
                 <span className="text-[#F5DEB3]/60">Health Factor</span>
@@ -114,11 +105,8 @@ function AavePool({ onNavigate }) {
           </div>
         </Card>
 
-        {/* Actions */}
         <Card className="bg-[#1a1f3a] border-[#D4AF37]/20 p-6 space-y-4">
           <h2 className="text-white text-lg">Actions</h2>
-
-          {/* Tab selector */}
           <div className="grid grid-cols-4 gap-1 bg-[#0B1437] rounded-lg p-1">
             {tabLabels.map((t) => (
               <button
@@ -155,8 +143,6 @@ function AavePool({ onNavigate }) {
               MAX
             </button>
           </div>
-
-          {/* Context hint */}
           <p className="text-xs text-[#F5DEB3]/50">
             {tab === "deposit"  && "Supplying earns interest and increases your credit collateral."}
             {tab === "withdraw" && "Withdrawing reduces collateral. Health factor must stay above 1.0."}
@@ -173,8 +159,6 @@ function AavePool({ onNavigate }) {
           </Button>
         </Card>
       </div>
-
-      {/* Credit score note */}
       <div className="rounded-xl border border-[#4ade80]/20 bg-[#052e16]/60 px-5 py-3 text-xs text-[#86efac] flex gap-3 items-start">
         <span className="text-base mt-0.5">⚡</span>
         <span>

@@ -4,7 +4,6 @@ import { getCreditRouter, getUSDC, addresses, getCreditPool } from "../lib/contr
 import { getSigner } from "../lib/eth";
 
 function getRevertReason(e) {
-  // Log the raw selector so we can identify which error it is
   const raw = e?.data ?? e?.error?.data ?? e?.info?.error?.data;
   if (raw) console.error("Raw error selector:", raw.slice(0, 10));
 
@@ -19,13 +18,9 @@ function getRevertReason(e) {
 
 export const useBorrow = () => {
   const [loading, setLoading] = useState(false);
-
-  // Signature matches what Borrow.jsx passes.
-  // adapter/asset params are accepted for compatibility but we always use
-  // the env-var addresses internally — avoids stale address bugs.
   const borrowFromAave = async (
-    _aaveAdapterAddress,   // kept for Borrow.jsx compat, ignored internally
-    _assetAddress,         // kept for Borrow.jsx compat, ignored internally
+    _aaveAdapterAddress,   
+    _assetAddress,         
     amount,
     decimals = 6
   ) => {
@@ -36,7 +31,7 @@ export const useBorrow = () => {
       const amountWei = ethers.parseUnits(amount.toString(), decimals);
 
       const tx = await router.borrowFromAave(
-        addresses.AAVE_ADAPTER,   // always from env — never stale
+        addresses.AAVE_ADAPTER,   
         addresses.USDC,
         amountWei
       );
@@ -51,7 +46,7 @@ export const useBorrow = () => {
   };
 
   const borrowFromCompound = async (
-    _compoundAdapterAddress,  // kept for compat
+    _compoundAdapterAddress,  
     amount,
     decimals = 6
   ) => {
@@ -80,7 +75,7 @@ export const useBorrow = () => {
     try {
         const signer    = await getSigner();
         const usdc      = getUSDC(signer);
-        const pool      = await getCreditPool(signer);    // ← await your existing async getter
+        const pool      = await getCreditPool(signer);    
         const amountWei = ethers.parseUnits(amount.toString(), decimals);
 
         const approveTx = await usdc.approve(await pool.getAddress(), amountWei);
@@ -97,7 +92,6 @@ export const useBorrow = () => {
     }
 };
 
-  // protocol: "aave" | "compound"
   const repay = async (amount, protocol = "aave", decimals = 6) => {
     setLoading(true);
     try {
@@ -105,9 +99,6 @@ export const useBorrow = () => {
       const router    = getCreditRouter(signer);
       const usdc      = getUSDC(signer);
       const amountWei = ethers.parseUnits(amount.toString(), decimals);
-
-      // CreditRouter.repayToAave/Compound both pull via safeTransferFrom(user→adapter)
-      // so the user must approve CreditRouter, not the adapter
       const approveTx = await usdc.approve(await router.getAddress(), amountWei);
       await approveTx.wait();
 
